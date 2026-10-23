@@ -8,6 +8,14 @@ const db = require('./lib/supabase');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Netlify Functions path rewrite support
+app.use((req, res, next) => {
+  if (req.url.startsWith('/.netlify/functions/server')) {
+    req.url = req.url.replace('/.netlify/functions/server', '') || '/';
+  }
+  next();
+});
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -765,6 +773,10 @@ app.post('/api/test-scan/:slug', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`[Futura Smart] Servidor ativo em http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`[Futura Smart] Servidor ativo em http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
