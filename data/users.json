@@ -1,0 +1,22 @@
+{
+  "users": [
+    {
+      "id": "usr-admin-01",
+      "name": "W elington Luchesi",
+      "email": "wluchesi@gmail.com",
+      "whatsapp": "(11) 99999-9999",
+      "password": "C@n@l4141",
+      "role": "admin",
+      "createdAt": "2026-10-23T11:00:00.000Z"
+    },
+    {
+      "id": "usr-gq1mkik",
+      "name": "Chiara",
+      "email": "chiara@gmail.com",
+      "whatsapp": "11998899889",
+      "password": "123456",
+      "role": "user",
+      "createdAt": "2026-10-23T20:55:21.402Z"
+    }
+  ]
+}

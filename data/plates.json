@@ -1,0 +1,262 @@
+{
+  "plates": [
+    {
+      "id": "plk-pv2y3m4",
+      "userId": "usr-gq1mkik",
+      "slug": "barbearia-don-ruan",
+      "name": "Barbearia Don Ruan",
+      "location": "Caixa",
+      "type": "custom",
+      "destinationUrl": "https://google.com.br",
+      "isActive": true,
+      "notes": "",
+      "createdAt": "2026-10-23T20:56:40.442Z",
+      "updatedAt": "2026-10-23T20:56:40.442Z",
+      "scans": {
+        "total": 2,
+        "nfc": 0,
+        "qr": 0
+      }
+    },
+    {
+      "id": "plk-320cxly",
+      "userId": "usr-admin-01",
+      "slug": "plaquinha-balcao-pizzaria",
+      "name": "Plaquinha Balcão Pizzaria",
+      "location": "Caixa 1",
+      "type": "google",
+      "destinationUrl": "https://g.page/r/exemplo/review",
+      "isActive": true,
+      "notes": "",
+      "createdAt": "2026-10-23T14:31:05.087Z",
+      "updatedAt": "2026-10-23T14:31:05.087Z",
+      "scans": {
+        "total": 0,
+        "nfc": 0,
+        "qr": 0
+      }
+    },
+    {
+      "id": "plk-tb2olde",
+      "slug": "futura-solucao",
+      "name": "Futura Solução",
+      "location": "Caixa",
+      "type": "instagram",
+      "destinationUrl": "https://www.instagram.com/vinimoreirams/",
+      "isActive": true,
+      "notes": "",
+      "createdAt": "2026-10-23T14:12:07.730Z",
+      "updatedAt": "2026-10-23T14:15:11.843Z",
+      "scans": {
+        "total": 1,
+        "nfc": 0,
+        "qr": 0
+      },
+      "userId": "usr-admin-01"
+    },
+    {
+      "id": "plk-g101",
+      "slug": "barbearia-vintage",
+      "name": "Barbearia Vintage Club",
+      "location": "Balcão Recepção",
+      "type": "google",
+      "destinationUrl": "https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4",
+      "isActive": true,
+      "notes": "Plaquinha Acrílico Black Piano 10x15cm",
+      "createdAt": "2026-10-10T14:32:00.000Z",
+      "updatedAt": "2026-10-20T10:15:00.000Z",
+      "scans": {
+        "total": 144,
+        "nfc": 91,
+        "qr": 53
+      },
+      "userId": "usr-admin-01"
+    },
+    {
+      "id": "plk-g102",
+      "slug": "pizzaria-bella-mesa1",
+      "name": "Pizzaria Bella Napoli",
+      "location": "Mesa 01 - Salão Nobre",
+      "type": "google",
+      "destinationUrl": "https://g.page/r/CbG9x7xL8mK-EAI/review",
+      "isActive": true,
+      "notes": "Display acrílico em L com QR Code e NFC",
+      "createdAt": "2026-10-12T09:00:00.000Z",
+      "updatedAt": "2026-10-21T18:20:00.000Z",
+      "scans": {
+        "total": 98,
+        "nfc": 64,
+        "qr": 34
+      },
+      "userId": "usr-admin-01"
+    },
+    {
+      "id": "plk-g103",
+      "slug": "clinica-sorriso-saude",
+      "name": "Clínica Odonto Sorriso",
+      "location": "Mesa de Atendimento 02",
+      "type": "google",
+      "destinationUrl": "https://g.page/r/CS91a2x98yZaEAI/review",
+      "isActive": true,
+      "notes": "Placa cristal com base em madeira",
+      "createdAt": "2026-10-15T11:45:00.000Z",
+      "updatedAt": "2026-10-22T08:30:00.000Z",
+      "scans": {
+        "total": 67,
+        "nfc": 45,
+        "qr": 22
+      },
+      "userId": "usr-admin-01"
+    },
+    {
+      "id": "plk-g104",
+      "slug": "studio-glam-insta",
+      "name": "Studio Glam Estética",
+      "location": "Espelho Principal",
+      "type": "instagram",
+      "destinationUrl": "https://instagram.com/studioglam.estetica",
+      "isActive": true,
+      "notes": "Redirecionamento para seguidores do Instagram",
+      "createdAt": "2026-10-18T16:10:00.000Z",
+      "updatedAt": "2026-10-18T16:10:00.000Z",
+      "scans": {
+        "total": 41,
+        "nfc": 29,
+        "qr": 12
+      },
+      "userId": "usr-admin-01"
+    },
+    {
+      "id": "plk-g105",
+      "slug": "hamburgueria-prime-menu",
+      "name": "Prime Burger & Fries",
+      "location": "Mesa 08",
+      "type": "menu",
+      "destinationUrl": "https://cardapio.primeburger.com.br",
+      "isActive": false,
+      "notes": "Temporariamente pausada para atualização de cardápio",
+      "createdAt": "2026-10-19T13:00:00.000Z",
+      "updatedAt": "2026-10-23T08:00:00.000Z",
+      "scans": {
+        "total": 215,
+        "nfc": 120,
+        "qr": 95
+      },
+      "userId": "usr-admin-01"
+    }
+  ],
+  "logs": [
+    {
+      "id": "log-1792789026965-746",
+      "plateId": "plk-pv2y3m4",
+      "userId": "usr-gq1mkik",
+      "slug": "barbearia-don-ruan",
+      "plateName": "Barbearia Don Ruan",
+      "source": "direto",
+      "device": "Windows (Desktop)",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "targetUrl": "https://google.com.br",
+      "timestamp": "2026-10-23T20:57:06.965Z"
+    },
+    {
+      "id": "log-1792789011416-696",
+      "plateId": "plk-pv2y3m4",
+      "userId": "usr-gq1mkik",
+      "slug": "barbearia-don-ruan",
+      "plateName": "Barbearia Don Ruan",
+      "source": "direto",
+      "device": "Windows (Desktop)",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "targetUrl": "https://google.com.br",
+      "timestamp": "2026-10-23T20:56:51.417Z"
+    },
+    {
+      "id": "log-1792764771105-75",
+      "plateId": "plk-tb2olde",
+      "slug": "futura-solucao",
+      "plateName": "Futura Solução",
+      "source": "direto",
+      "device": "Windows (Desktop)",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "targetUrl": "https://search.google.com/local/writereview?placeid=ChIJJ9xp2TB516cRTY1ZSFwVIgk",
+      "timestamp": "2026-10-23T14:12:51.105Z"
+    },
+    {
+      "id": "log-1792763737067-425",
+      "plateId": "plk-g101",
+      "slug": "barbearia-vintage",
+      "plateName": "Barbearia Vintage Club",
+      "source": "nfc",
+      "device": "Outro / Mobile",
+      "userAgent": "node",
+      "targetUrl": "https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4",
+      "timestamp": "2026-10-23T13:55:37.067Z"
+    },
+    {
+      "id": "log-1792763682131-448",
+      "plateId": "plk-g101",
+      "slug": "barbearia-vintage",
+      "plateName": "Barbearia Vintage Club",
+      "source": "nfc",
+      "device": "Windows (Desktop)",
+      "userAgent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; pt-BR) WindowsPowerShell/5.1.26100.9711",
+      "targetUrl": "https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4",
+      "timestamp": "2026-10-23T13:54:42.131Z"
+    },
+    {
+      "id": "log-001",
+      "plateId": "plk-g101",
+      "slug": "barbearia-vintage",
+      "plateName": "Barbearia Vintage Club",
+      "source": "nfc",
+      "device": "iPhone (iOS)",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X)",
+      "targetUrl": "https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4",
+      "timestamp": "2026-10-23T10:15:32.000Z"
+    },
+    {
+      "id": "log-002",
+      "plateId": "plk-g102",
+      "slug": "pizzaria-bella-mesa1",
+      "plateName": "Pizzaria Bella Napoli",
+      "source": "qr",
+      "device": "Android",
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-S928B)",
+      "targetUrl": "https://g.page/r/CbG9x7xL8mK-EAI/review",
+      "timestamp": "2026-10-23T10:04:18.000Z"
+    },
+    {
+      "id": "log-003",
+      "plateId": "plk-g101",
+      "slug": "barbearia-vintage",
+      "plateName": "Barbearia Vintage Club",
+      "source": "nfc",
+      "device": "Android",
+      "userAgent": "Mozilla/5.0 (Linux; Android 13; Pixel 7)",
+      "targetUrl": "https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4",
+      "timestamp": "2026-10-23T09:48:50.000Z"
+    },
+    {
+      "id": "log-004",
+      "plateId": "plk-g103",
+      "slug": "clinica-sorriso-saude",
+      "plateName": "Clínica Odonto Sorriso",
+      "source": "nfc",
+      "device": "iPhone (iOS)",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X)",
+      "targetUrl": "https://g.page/r/CS91a2x98yZaEAI/review",
+      "timestamp": "2026-10-23T09:12:10.000Z"
+    },
+    {
+      "id": "log-005",
+      "plateId": "plk-g104",
+      "slug": "studio-glam-insta",
+      "plateName": "Studio Glam Estética",
+      "source": "qr",
+      "device": "iPhone (iOS)",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X)",
+      "targetUrl": "https://instagram.com/studioglam.estetica",
+      "timestamp": "2026-10-23T08:55:04.000Z"
+    }
+  ]
+}

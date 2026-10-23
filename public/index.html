@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Futura Smart | Tecnologia NFC & Gestão de Placas</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Ambient Glow Effects -->
+  <div class="ambient-glow glow-1" aria-hidden="true"></div>
+  <div class="ambient-glow glow-2" aria-hidden="true"></div>
+
+  <!-- Header / Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 5-6.5 12.5-6.5 12.5S6 13.5 6 8.5Z"></path>
+            <circle cx="12.5" cy="8.5" r="2.5"></circle>
+          </svg>
+          <span class="nfc-pulse"></span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">Futura Smart <span class="badge-engine">Tecnologia NFC</span></div>
+          <div class="brand-subtitle">Gestão de Placas</div>
+        </div>
+      </div>
+
+      <div class="header-status">
+        <button id="btnOpenUsersModal" class="btn-secondary btn-admin-only" style="display:none;" title="Gerenciar todos os usuários cadastrados">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Usuários
+        </button>
+
+        <button id="btnOpenLogs" class="btn-secondary" title="Ver registros de acessos em tempo real">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          Logs
+        </button>
+
+        <button id="btnNewPlate" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Nova Placa
+        </button>
+
+        <!-- User Profile Header -->
+        <div class="user-header-profile" id="userHeaderProfile">
+          <div class="user-avatar-circle" id="userAvatar">W</div>
+          <div class="user-meta-text">
+            <span class="user-name-title" id="userNameHeader">W Luchesi</span>
+            <span class="user-badge-role" id="userRoleBadge">Admin</span>
+          </div>
+          <button id="btnLogout" class="btn-icon-logout" title="Sair da Conta">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="app-main">
+    <div class="container">
+      
+      <!-- Metrics HUD Cards -->
+      <section class="metrics-grid" id="metricsGrid">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Placas Gerenciadas</span>
+            <span class="metric-icon icon-cyan">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </span>
+          </div>
+          <div class="metric-value" id="valTotalPlates">--</div>
+          <div class="metric-footer">
+            <span class="metric-sub" id="valActivePlates">-- ativas no momento</span>
+            <span class="tag-status" id="tagHealth">100% Saudável</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Total de Acessos</span>
+            <span class="metric-icon icon-indigo">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </span>
+          </div>
+          <div class="metric-value" id="valTotalScans">--</div>
+          <div class="metric-footer">
+            <span class="metric-sub"><strong id="valTodayScans">0</strong> registrados hoje</span>
+            <span class="badge-growth">+Redirecionamento Instantâneo</span>
+          </div>
+        </div>
+
+        <div class="metric-card card-nfc">
+          <div class="metric-header">
+            <span class="metric-title">Aproximações NFC</span>
+            <span class="metric-icon icon-emerald">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                <line x1="12" y1="20" x2="12.01" y2="20"></line>
+              </svg>
+            </span>
+          </div>
+          <div class="metric-value" id="valNfcScans">--</div>
+          <div class="metric-footer">
+            <div class="progress-bar-container">
+              <div class="progress-bar bar-emerald" id="nfcProgressBar" style="width: 50%;"></div>
+            </div>
+            <span class="progress-text" id="nfcRatioText">--% do total</span>
+          </div>
+        </div>
+
+        <div class="metric-card card-qr">
+          <div class="metric-header">
+            <span class="metric-title">Leituras QR Code</span>
+            <span class="metric-icon icon-amber">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </span>
+          </div>
+          <div class="metric-value" id="valQrScans">--</div>
+          <div class="metric-footer">
+            <div class="progress-bar-container">
+              <div class="progress-bar bar-amber" id="qrProgressBar" style="width: 50%;"></div>
+            </div>
+            <span class="progress-text" id="qrRatioText">--% do total</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dynamic Redirection Explanation Banner -->
+      <section class="banner-explainer">
+        <div class="explainer-content">
+          <div class="explainer-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Como Funciona o Redirecionamento Dinâmico
+          </div>
+          <h2 class="explainer-title">Altere o link de destino a qualquer momento sem regravar a placa física</h2>
+          <p class="explainer-desc">
+            A tag NFC e o QR Code impresso na plaquinha acrílica apontam permanentemente para a URL inteligente do motor (ex: <code>/r/sua-loja</code>). Você pode mudar o destino (Google Avaliações, Instagram, Cardápio ou WhatsApp) com um clique e a placa física atualiza em tempo real para os clientes.
+          </p>
+        </div>
+      </section>
+
+      <!-- Filter & Controls Ribbon -->
+      <section class="controls-ribbon">
+        <div class="search-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Buscar por estabelecimento, slug ou local...">
+        </div>
+
+        <div class="filter-pills">
+          <button class="filter-pill active" data-filter="all">Todas as Placas</button>
+          <button class="filter-pill" data-filter="google">Google Avaliações</button>
+          <button class="filter-pill" data-filter="instagram">Instagram</button>
+          <button class="filter-pill" data-filter="whatsapp">WhatsApp</button>
+          <button class="filter-pill" data-filter="menu">Cardápio</button>
+          <button class="filter-pill" data-filter="active">Ativas</button>
+          <button class="filter-pill" data-filter="paused">Pausadas</button>
+        </div>
+      </section>
+
+      <!-- Plates Grid Section -->
+      <section class="plates-section">
+        <div class="section-header">
+          <h3 class="section-title">Placas Inteligentes Cadastradas (<span id="platesCount">0</span>)</h3>
+          <div class="live-legend">
+            <span class="legend-item"><span class="dot-legend dot-nfc"></span> NFC Tag</span>
+            <span class="legend-item"><span class="dot-legend dot-qr"></span> QR Code</span>
+          </div>
+        </div>
+
+        <div class="plates-grid" id="platesGrid">
+          <!-- Dynamically populated via JS -->
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Carregando placas inteligentes...</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- MODAL: Nova / Editar Placa -->
+  <div class="modal-overlay" id="plateModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 class="modal-title" id="modalPlateTitle">Configurar Placa Inteligente</h3>
+          <p class="modal-subtitle">Defina o identificador e a URL de destino dinâmica</p>
+        </div>
+        <button class="btn-close" id="btnClosePlateModal">&times;</button>
+      </div>
+
+      <form id="plateForm">
+        <input type="hidden" id="formPlateId">
+
+        <div class="form-group">
+          <label for="formName">Nome da Empresa / Estabelecimento *</label>
+          <input type="text" id="formName" required placeholder="Ex: Barbearia Dom Pedro, Pizzaria Bella Napoli">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="formLocation">Local de Instalação da Placa</label>
+            <input type="text" id="formLocation" placeholder="Ex: Balcão Caixa, Mesa 04, Totem Entrada">
+          </div>
+
+          <div class="form-group">
+            <label for="formType">Tipo de Finalidade</label>
+            <select id="formType">
+              <option value="google">⭐ Google Avaliações (Recomendado)</option>
+              <option value="instagram">📸 Instagram Profile</option>
+              <option value="whatsapp">💬 WhatsApp / Pedidos</option>
+              <option value="menu">🍽️ Cardápio Digital / Wi-Fi</option>
+              <option value="custom">🔗 Link Personalizado</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Destination URL -->
+        <div class="form-group">
+          <label for="formDestination">URL de Destino Dinâmica *</label>
+          <input type="url" id="formDestination" required placeholder="https://search.google.com/local/writereview?placeid=... ou https://g.page/r/...">
+        </div>
+
+        <!-- Slug & Dynamic Short Link -->
+        <div class="form-group">
+          <label for="formSlug">Slug / Código da Placa (Identificador Único)</label>
+          <div class="input-prefix-group">
+            <span class="input-prefix" id="serverHostPrefix">/r/</span>
+            <input type="text" id="formSlug" placeholder="nome-do-negocio">
+          </div>
+          <small class="form-help">Este é o link permanente que será gravado no NFC e no QR Code físico.</small>
+        </div>
+
+        <!-- Admin only: Assign user -->
+        <div class="form-group" id="groupAssignUser" style="display:none;">
+          <label for="formAssignUser">Vincular a Usuário / Cliente (Exclusivo Administrador)</label>
+          <select id="formAssignUser">
+            <!-- Populated dynamically via JS -->
+          </select>
+        </div>
+
+        <div class="form-checkbox">
+          <input type="checkbox" id="formIsActive" checked>
+          <label for="formIsActive">Manter redirecionamento ativado para clientes</label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btnCancelPlate">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSavePlate">Salvar Placa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Estúdio QR Code & Gravação NFC -->
+  <div class="modal-overlay" id="studioModal" aria-hidden="true">
+    <div class="modal-card modal-wide">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 class="modal-title">Estúdio de Gravação NFC & Produção de QR Code</h3>
+          <p class="modal-subtitle" id="studioSubtitle">Plaquinha Inteligente: --</p>
+        </div>
+        <button class="btn-close" id="btnCloseStudio">&times;</button>
+      </div>
+
+      <div class="studio-layout">
+        
+        <!-- Left Column: Visual Mockup da Plaquinha Física -->
+        <div class="mockup-column">
+          <div class="mockup-label">Pré-Visualização da Placa Acrílica Física</div>
+          
+          <div class="plate-mockup" id="plateMockup">
+            <div class="plate-gloss"></div>
+            
+            <div class="mockup-header">
+              <div class="mockup-brand" id="mockupBrand">Sua Empresa Aqui</div>
+              <div class="mockup-sub" id="mockupLocation">Balcão Principal</div>
+            </div>
+
+            <!-- Dynamic NFC Waves Icon -->
+            <div class="mockup-nfc-badge">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                <line x1="12" y1="20" x2="12.01" y2="20"></line>
+              </svg>
+              <span>Aproxime o Celular</span>
+            </div>
+
+            <!-- Mockup QR Code Holder -->
+            <div class="mockup-qr-box">
+              <img id="mockupQrImage" src="" alt="QR Code da Placa">
+              <div class="mockup-qr-overlay-logo" id="mockupCenterLogo">⭐</div>
+            </div>
+
+            <div class="mockup-footer">
+              <div class="mockup-callout">Ou aponte a câmera no QR Code</div>
+              <div class="mockup-stars">★★★★★</div>
+            </div>
+          </div>
+
+          <div class="mockup-dimensions">Dimensões ideais para corte e impressão: <strong>10 x 15 cm</strong> ou <strong>8 x 10 cm</strong></div>
+        </div>
+
+        <!-- Right Column: NFC & QR Generation Controls -->
+        <div class="controls-column">
+          
+          <!-- NFC Section -->
+          <div class="studio-section">
+            <div class="section-badge badge-nfc">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+              1. Gravação da Tag NFC (NTAG213 / 215 / 216)
+            </div>
+            <p class="section-instruction">Esta é a URL exata a ser gravada no chip NFC físico por aproximação:</p>
+            
+            <div class="code-copy-box">
+              <input type="text" id="nfcUrlInput" readonly>
+              <button class="btn-copy" id="btnCopyNfcUrl" title="Copiar URL">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span>Copiar</span>
+              </button>
+            </div>
+
+            <div class="nfc-tutorial-box">
+              <strong>Como gravar em 10 segundos:</strong>
+              <ol>
+                <li>Abra o aplicativo gratuito <strong>NFC Tools</strong> no celular.</li>
+                <li>Clique em <strong>Escrever</strong> &gt; <strong>Adicionar um registro</strong> &gt; <strong>URL / URI</strong>.</li>
+                <li>Cole a URL acima e encoste o celular na plaquinha acrílica. Pronto!</li>
+              </ol>
+            </div>
+          </div>
+
+          <!-- QR Code Section -->
+          <div class="studio-section">
+            <div class="section-badge badge-qr">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              2. Arquivos de Impressão do QR Code
+            </div>
+            
+            <div class="qr-export-buttons">
+              <a id="btnDownloadPng" class="btn-export" href="#" download>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Baixar PNG (Alta Resolução)
+              </a>
+              <a id="btnDownloadSvg" class="btn-export btn-outline" href="#" download>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path></svg>
+                Baixar SVG (Vetorial Gráfica)
+              </a>
+            </div>
+
+            <!-- Testing live redirection -->
+            <div class="test-live-box">
+              <div class="test-live-info">
+                <strong>Testar Redirecionamento Dinâmico:</strong>
+                <span>Abra a URL de redirecionamento para testar e computar métricas em tempo real.</span>
+              </div>
+              <div class="test-buttons-row">
+                <button class="btn-test-action" id="btnTestNfc"><span class="badge-dot-cyan"></span> Testar como NFC</button>
+                <button class="btn-test-action" id="btnTestQr"><span class="badge-dot-amber"></span> Testar como QR Code</button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- DRAWER: Logs & Acessos em Tempo Real -->
+  <aside class="drawer" id="logsDrawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div class="drawer-title-group">
+        <h3 class="drawer-title">Auditoria de Acessos ao Vivo</h3>
+        <span class="live-tag"><span class="live-blink"></span> Tempo Real</span>
+      </div>
+      <button class="btn-close" id="btnCloseLogs">&times;</button>
+    </div>
+    
+    <div class="drawer-content">
+      <div class="device-summary" id="deviceSummary">
+        <!-- Injetado dinamicamente -->
+      </div>
+      
+      <div class="logs-list-header">Últimos Eventos de Redirecionamento:</div>
+      <div class="logs-list" id="logsList">
+        <!-- Injetado dinamicamente -->
+      </div>
+    </div>
+  </aside>
+
+  <!-- MODAL: Autenticação (Login & Cadastro) -->
+  <div class="modal-overlay is-active" id="authModal" aria-hidden="false">
+    <div class="modal-card modal-auth">
+      <div class="auth-header">
+        <div class="auth-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#06B6D4" stroke-width="2.2">
+            <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 5-6.5 12.5-6.5 12.5S6 13.5 6 8.5Z"></path>
+            <circle cx="12.5" cy="8.5" r="2.5"></circle>
+          </svg>
+        </div>
+        <h2 class="auth-brand-title">Futura Smart</h2>
+        <p class="auth-brand-subtitle">Acesse o sistema de gerenciamento de placas inteligentes NFC</p>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab-btn active" id="tabBtnLogin">Já Tenho Conta (Entrar)</button>
+        <button type="button" class="auth-tab-btn" id="tabBtnRegister">Novo Cadastro</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" class="auth-form-panel">
+        <div class="form-group">
+          <label for="loginEmail">E-mail *</label>
+          <input type="email" id="loginEmail" required placeholder="seuemail@exemplo.com">
+        </div>
+
+        <div class="form-group">
+          <label for="loginPassword">Senha de Acesso *</label>
+          <input type="password" id="loginPassword" required placeholder="Digite sua senha">
+        </div>
+
+        <button type="submit" class="btn-primary btn-auth-submit" id="btnSubmitLogin">
+          Acessar Painel
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="registerForm" class="auth-form-panel" style="display:none;">
+        <div class="form-group">
+          <label for="regName">Nome Completo *</label>
+          <input type="text" id="regName" required placeholder="Ex: Roberto Silva">
+        </div>
+
+        <div class="form-group">
+          <label for="regEmail">E-mail *</label>
+          <input type="email" id="regEmail" required placeholder="seuemail@exemplo.com">
+        </div>
+
+        <div class="form-group">
+          <label for="regWhatsapp">WhatsApp *</label>
+          <input type="tel" id="regWhatsapp" required placeholder="(11) 99999-9999">
+          <small class="form-help">Utilizado para contato e suporte da sua conta.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="regPassword">Crie uma Senha *</label>
+          <input type="password" id="regPassword" required placeholder="Mínimo 4 caracteres">
+        </div>
+
+        <button type="submit" class="btn-primary btn-auth-submit" id="btnSubmitRegister">
+          Criar Minha Conta
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Gerenciador de Usuários (Exclusivo Administrador) -->
+  <div class="modal-overlay" id="usersModal" aria-hidden="true">
+    <div class="modal-card modal-wide">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 class="modal-title">Gestão de Usuários & Clientes</h3>
+          <p class="modal-subtitle">Controle total sobre todos os cadastros, permissões e senhas</p>
+        </div>
+        <button class="btn-close" id="btnCloseUsersModal">&times;</button>
+      </div>
+
+      <div class="users-toolbar">
+        <div class="users-toolbar-left">
+          <span class="users-count-tag" id="usersTotalCount">Total: -- usuários</span>
+        </div>
+        <button class="btn-primary btn-sm" id="btnOpenCreateUserModal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Cadastrar Novo Usuário
+        </button>
+      </div>
+
+      <div class="users-table-container">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Usuário</th>
+              <th>WhatsApp</th>
+              <th>Acesso / Papel</th>
+              <th>Placas</th>
+              <th>Ações do Administrador</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <!-- Populated dynamically via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Criar Usuário pelo Administrador -->
+  <div class="modal-overlay" id="createUserModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 class="modal-title">Novo Usuário</h3>
+          <p class="modal-subtitle">Cadastre um cliente ou novo administrador</p>
+        </div>
+        <button class="btn-close" id="btnCloseCreateUser">&times;</button>
+      </div>
+
+      <form id="adminCreateUserForm">
+        <div class="form-group">
+          <label for="adminNewName">Nome Completo *</label>
+          <input type="text" id="adminNewName" required placeholder="Ex: Barbearia Vip">
+        </div>
+
+        <div class="form-group">
+          <label for="adminNewEmail">E-mail *</label>
+          <input type="email" id="adminNewEmail" required placeholder="cliente@email.com">
+        </div>
+
+        <div class="form-group">
+          <label for="adminNewWhatsapp">WhatsApp *</label>
+          <input type="tel" id="adminNewWhatsapp" required placeholder="(11) 99999-9999">
+        </div>
+
+        <div class="form-group">
+          <label for="adminNewPassword">Senha de Acesso *</label>
+          <input type="password" id="adminNewPassword" required placeholder="Senha inicial">
+        </div>
+
+        <div class="form-group">
+          <label for="adminNewRole">Tipo de Acesso</label>
+          <select id="adminNewRole">
+            <option value="user">Usuário Comum (Acesso somente às suas placas)</option>
+            <option value="admin">Administrador (Acesso total ao sistema)</option>
+          </select>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btnCancelCreateUser">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSaveCreateUser">Salvar Usuário</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Editar Usuário pelo Administrador -->
+  <div class="modal-overlay" id="editUserModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 class="modal-title" id="editUserModalTitle">Editar Dados do Usuário</h3>
+          <p class="modal-subtitle">Atualize as informações cadastrais e permissão</p>
+        </div>
+        <button class="btn-close" id="btnCloseEditUser">&times;</button>
+      </div>
+
+      <form id="adminEditUserForm">
+        <input type="hidden" id="editUserId">
+
+        <div class="form-group">
+          <label for="editUserName">Nome Completo *</label>
+          <input type="text" id="editUserName" required placeholder="Nome do usuário">
+        </div>
+
+        <div class="form-group">
+          <label for="editUserEmail">E-mail *</label>
+          <input type="email" id="editUserEmail" required placeholder="email@exemplo.com">
+        </div>
+
+        <div class="form-group">
+          <label for="editUserWhatsapp">WhatsApp *</label>
+          <input type="tel" id="editUserWhatsapp" required placeholder="(11) 99999-9999">
+        </div>
+
+        <div class="form-group">
+          <label for="editUserRole">Tipo de Acesso</label>
+          <select id="editUserRole">
+            <option value="user">Usuário Comum (Acesso somente às suas placas)</option>
+            <option value="admin">Administrador (Acesso total ao sistema)</option>
+          </select>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btnCancelEditUser">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSaveEditUser">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Alterar Senha de Usuário pelo Administrador -->
+  <div class="modal-overlay" id="passwordModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 class="modal-title" id="passwordModalTitle">Alterar Senha do Usuário</h3>
+          <p class="modal-subtitle" id="passwordModalSubtitle">Defina a nova senha para o cadastro</p>
+        </div>
+        <button class="btn-close" id="btnClosePasswordModal">&times;</button>
+      </div>
+
+      <form id="adminChangePasswordForm">
+        <input type="hidden" id="changePasswordUserId">
+
+        <div class="form-group">
+          <label for="newPasswordInput">Nova Senha *</label>
+          <input type="password" id="newPasswordInput" required placeholder="Mínimo 4 caracteres">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btnCancelPasswordModal">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSaveNewPassword">Salvar Nova Senha</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toastNotification">
+    <span class="toast-icon">✓</span>
+    <span class="toast-message" id="toastMessage">Operação realizada com sucesso!</span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
