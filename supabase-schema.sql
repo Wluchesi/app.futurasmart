@@ -52,6 +52,11 @@ CREATE INDEX IF NOT EXISTS idx_plates_user ON public.plates (user_id);
 CREATE INDEX IF NOT EXISTS idx_logs_plate ON public.logs (plate_id);
 CREATE INDEX IF NOT EXISTS idx_logs_created ON public.logs (created_at DESC);
 
+-- Desativar RLS para permitir que o backend Express realize as operações
+ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.plates DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.logs DISABLE ROW LEVEL SECURITY;
+
 -- 4. Inserir Administrador Principal (Super Admin)
 INSERT INTO public.users (id, name, email, whatsapp, password, role)
 VALUES (
