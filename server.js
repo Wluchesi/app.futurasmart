@@ -508,6 +508,62 @@ app.get('/api/plates', authenticate, async (req, res) => {
   }
 });
 
+// Obter próximo código sequencial de placa (iniciando em PI-121)
+app.get('/api/plates/next-code', authenticate, async (req, res) => {
+  try {
+    const nextCode = await db.getNextPlateCode();
+    res.json({ success: true, nextCode });
+  } catch (err) {
+    console.error('Erro next-code:', err);
+    res.status(500).json({ success: false, message: 'Erro ao calcular próximo código' });
+  }
+});
+
+// Gerar lote de placas sequenciais para impressão gráfica
+app.post('/api/plates/batch-generate', authenticate, async (req, res) => {
+  try {
+    const { count = 1, destinationUrl, type = 'google', assignedUserId, location = 'Balcão' } = req.body;
+    const userId = (req.user.role === 'admin' && assignedUserId) ? assignedUserId : req.user.id;
+    const url = destinationUrl ? destinationUrl.trim() : 'https://google.com';
+
+    const created = [];
+    const requestedCount = Math.min(Math.max(parseInt(count, 10) || 1, 1), 16);
+
+    for (let i = 0; i < requestedCount; i++) {
+      const code = await db.getNextPlateCode();
+      const num = code.replace('PI-', '');
+      const slug = `pi-${num.toLowerCase()}`;
+
+      const newPlate = {
+        id: 'plk-' + Math.random().toString(36).substring(2, 9),
+        userId: userId,
+        slug: slug,
+        name: `Placa Inteligente ${code}`,
+        code: code,
+        location: location,
+        type: type,
+        destinationUrl: url,
+        isActive: true,
+        notes: `Gerada no Estúdio Gráfico [${code}]`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const saved = await db.createPlate(newPlate);
+      created.push(saved);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `${created.length} placa(s) gerada(s) com sucesso na sequência!`,
+      plates: created
+    });
+  } catch (err) {
+    console.error('Erro batch-generate:', err);
+    res.status(500).json({ success: false, message: 'Erro ao gerar lote de placas' });
+  }
+});
+
 // Buscar placa individual
 app.get('/api/plates/:id', authenticate, async (req, res) => {
   try {

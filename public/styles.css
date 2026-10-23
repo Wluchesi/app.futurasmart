@@ -2167,3 +2167,763 @@ select option {
   color: #FFA4B2;
 }
 
+/* ========================================================
+   ESTÚDIO GRÁFICO & IMPRESSÃO A4 (10x15 CM) PARA GRÁFICA
+   ======================================================== */
+
+.modal-card-studio {
+  width: 96vw;
+  max-width: 1420px;
+  height: 92vh;
+  max-height: 960px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(6, 182, 212, 0.15);
+}
+
+.modal-card-studio .modal-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.studio-badge-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.studio-sparkle {
+  font-size: 1.4rem;
+}
+
+.studio-body-layout {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.studio-sidebar-controls {
+  padding: 20px 24px;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.7);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.studio-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.studio-group-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #CBD5E1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.studio-segmented-pill {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.studio-seg-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.studio-seg-btn.active {
+  background: rgba(6, 182, 212, 0.2);
+  color: var(--accent-cyan-light);
+  font-weight: 700;
+}
+
+.studio-code-callout {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(15, 23, 42, 0.8));
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.callout-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.badge-auto-code {
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: #34D399;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.callout-code-val {
+  font-size: 1.8rem;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  color: #38BDF8;
+  letter-spacing: 1px;
+  margin: 6px 0;
+  text-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+}
+
+.callout-code-hint {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.studio-input, .studio-select {
+  width: 100%;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  outline: none;
+  transition: var(--transition);
+}
+
+.studio-input:focus, .studio-select:focus {
+  border-color: var(--accent-cyan-light);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+}
+
+.theme-selection-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.theme-card-option {
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.theme-card-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.theme-card-option.active {
+  border-color: #38BDF8;
+  background: rgba(6, 182, 212, 0.12);
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.25);
+}
+
+.theme-card-preview {
+  width: 100%;
+  height: 60px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.preview-white {
+  background: #FFFFFF;
+  color: #111827;
+  border: 1px solid #E2E8F0;
+}
+
+.preview-black {
+  background: #111111;
+  color: #FFFFFF;
+  border: 1px solid #333333;
+}
+
+.mini-bar {
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853);
+  border-radius: 1px;
+}
+
+.mini-stars {
+  font-size: 0.65rem;
+  color: #FBBC05;
+  letter-spacing: 1px;
+}
+
+.mini-logo {
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-family: sans-serif;
+}
+
+.theme-card-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.layout-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.layout-btn-option {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: var(--transition);
+  text-align: center;
+}
+
+.layout-btn-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.layout-btn-option.active {
+  border-color: #38BDF8;
+  background: rgba(6, 182, 212, 0.15);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+}
+
+.layout-num {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #38BDF8;
+}
+
+.layout-text {
+  font-size: 0.72rem;
+  color: #CBD5E1;
+  line-height: 1.2;
+}
+
+.layout-text small {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+
+.studio-actions-stack {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn-generate-pdf {
+  width: 100%;
+  justify-content: center;
+  padding: 12px 18px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #06B6D4, #3B82F6);
+  border: none;
+  box-shadow: 0 4px 16px rgba(6, 182, 212, 0.35);
+}
+
+.btn-generate-pdf:hover {
+  background: linear-gradient(135deg, #0891B2, #2563EB);
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.45);
+}
+
+/* Mesa Gráfica / Canvas Viewport */
+.studio-canvas-workspace {
+  background: #0B0F17;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.canvas-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: rgba(30, 41, 59, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.canvas-spec-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.badge-canvas-summary {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38BDF8;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.72rem;
+}
+
+.canvas-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.zoom-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.btn-zoom {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #CBD5E1;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-zoom.active {
+  background: rgba(6, 182, 212, 0.25);
+  border-color: #38BDF8;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.canvas-viewport {
+  flex: 1;
+  overflow: auto;
+  padding: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: radial-gradient(circle at 50% 50%, #172033 0%, #0B0F17 100%);
+}
+
+/* A4 Sheet Simulation */
+.a4-sheet-container {
+  width: 210mm;
+  min-width: 210mm;
+  height: 297mm;
+  min-height: 297mm;
+  background: #FFFFFF;
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.15);
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+  transform-origin: top center;
+  transition: transform 0.2s ease;
+}
+
+.a4-sheet-inner {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  position: relative;
+}
+
+.a4-sheet-inner.layout-1 {
+  justify-content: center;
+  align-items: center;
+  padding: 10mm;
+}
+
+.a4-sheet-inner.layout-2 {
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 6mm;
+  padding: 10mm 4mm;
+}
+
+.a4-sheet-inner.layout-4 {
+  display: grid;
+  grid-template-columns: repeat(2, 100mm);
+  grid-template-rows: repeat(2, 145mm);
+  justify-content: center;
+  align-content: center;
+  gap: 3mm;
+  padding: 2mm;
+}
+
+/* ========================================================
+   CARD DA ARTE DA PLACA (100mm x 150mm)
+   ======================================================== */
+
+.print-plate-wrapper {
+  position: relative;
+  width: 100mm;
+  height: 150mm;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.print-plate-card {
+  width: 100mm;
+  height: 150mm;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.print-plate-card.theme-white {
+  background: #FFFFFF;
+  color: #111827;
+}
+
+.print-plate-card.theme-black {
+  background: #121212;
+  color: #FFFFFF;
+}
+
+/* Marcas de corte para guilhotina (Crop marks) */
+.crop-marks-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.crop-corner {
+  position: absolute;
+  width: 6mm;
+  height: 6mm;
+}
+
+.crop-tl { top: -3mm; left: -3mm; border-right: 0.3mm solid #94A3B8; border-bottom: 0.3mm solid #94A3B8; }
+.crop-tr { top: -3mm; right: -3mm; border-left: 0.3mm solid #94A3B8; border-bottom: 0.3mm solid #94A3B8; }
+.crop-bl { bottom: -3mm; left: -3mm; border-right: 0.3mm solid #94A3B8; border-top: 0.3mm solid #94A3B8; }
+.crop-br { bottom: -3mm; right: -3mm; border-left: 0.3mm solid #94A3B8; border-top: 0.3mm solid #94A3B8; }
+
+.plate-rainbow-bar {
+  height: 4mm;
+  width: 100%;
+  background: linear-gradient(90deg, #4285F4 0%, #EA4335 28%, #FBBC05 65%, #34A853 100%);
+  flex-shrink: 0;
+}
+
+.plate-content-body {
+  flex: 1;
+  padding: 3mm 5mm 2.5mm 5mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.plate-header-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  text-align: center;
+}
+
+.plate-google-g-logo {
+  width: 17mm;
+  height: 17mm;
+  margin-bottom: 1mm;
+}
+
+.plate-stars-row {
+  display: flex;
+  gap: 2mm;
+  margin-bottom: 1mm;
+}
+
+.plate-stars-row svg {
+  width: 5.5mm;
+  height: 5.5mm;
+  fill: #FBBC05;
+  filter: drop-shadow(0 1px 2px rgba(251, 188, 5, 0.45));
+}
+
+.plate-title-rate {
+  font-size: 3.8mm;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  margin: 0;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.plate-google-word {
+  font-size: 9mm;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  margin: 0.5mm 0 1mm 0;
+  line-height: 1;
+}
+
+.g-blue { color: #4285F4; }
+.g-red { color: #EA4335; }
+.g-yellow { color: #FBBC05; }
+.g-green { color: #34A853; }
+
+.plate-divider-line {
+  width: 90%;
+  height: 1.2mm;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #4285F4 0%, #EA4335 28%, #FBBC05 65%, #34A853 100%);
+  margin-bottom: 1mm;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.plate-opinion-sub {
+  font-size: 2.3mm;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+/* Caixas Centrais: QR Code e NFC */
+.plate-cards-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3.5mm;
+  width: 100%;
+  margin: 2mm 0;
+}
+
+.plate-card-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4mm;
+}
+
+.plate-frame-gradient {
+  width: 39mm;
+  height: 39mm;
+  border-radius: 4mm;
+  padding: 1.4mm;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #4285F4 0%, #EA4335 30%, #FBBC05 70%, #34A853 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.plate-frame-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 3mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-white .plate-frame-inner {
+  background: #FFFFFF;
+}
+
+.theme-black .plate-frame-inner {
+  background: #18181B;
+}
+
+.qr-code-rendered-img {
+  width: 32mm;
+  height: 32mm;
+  display: block;
+}
+
+.qr-center-google-badge {
+  position: absolute;
+  width: 9.5mm;
+  height: 9.5mm;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2mm;
+  box-sizing: border-box;
+}
+
+.nfc-phone-illustration {
+  width: 30mm;
+  height: 30mm;
+}
+
+.theme-white .nfc-phone-illustration path,
+.theme-white .nfc-phone-illustration text {
+  fill: #111827;
+  stroke: #111827;
+}
+
+.theme-black .nfc-phone-illustration path,
+.theme-black .nfc-phone-illustration text {
+  fill: #FFFFFF;
+  stroke: #FFFFFF;
+}
+
+.plate-pill-instruction {
+  border-radius: 10mm;
+  padding: 1.1mm 2.8mm;
+  font-size: 2.1mm;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 1.2mm;
+  white-space: nowrap;
+}
+
+.theme-white .plate-pill-instruction {
+  background: #111827;
+  color: #FFFFFF;
+}
+
+.theme-black .plate-pill-instruction {
+  background: #FFFFFF;
+  color: #111827;
+}
+
+/* Rodapé: Assinatura e Código PI-121 */
+.plate-footer-section {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  position: relative;
+  margin-top: 1mm;
+}
+
+.plate-code-corner {
+  font-size: 3.4mm;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.theme-white .plate-code-corner {
+  color: #111827;
+}
+
+.theme-black .plate-code-corner {
+  color: #FFFFFF;
+}
+
+.plate-thanks-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
+  position: relative;
+  bottom: -1mm;
+}
+
+.plate-thanks-text {
+  font-family: 'Caveat', cursive;
+  font-size: 9.5mm;
+  font-weight: 700;
+  line-height: 0.85;
+  transform: rotate(-3deg);
+}
+
+.theme-white .plate-thanks-text {
+  color: #111827;
+}
+
+.theme-black .plate-thanks-text {
+  color: #FFFFFF;
+}
+
+.plate-thanks-brush {
+  width: 22mm;
+  height: 2mm;
+  margin-top: 0.5mm;
+}
+
+/* ========================================================
+   REGRAS DE IMPRESSÃO REAL A4 (@media print)
+   ======================================================== */
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #a4PrintSheet, #a4PrintSheet * {
+    visibility: visible !important;
+  }
+  #a4PrintSheet {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #FFFFFF !important;
+    transform: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}
+

@@ -8,8 +8,11 @@
   <!-- Modern Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   
+  <!-- PDF Generator Library for Print Shop -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -51,6 +54,15 @@
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
           </svg>
           Logs
+        </button>
+
+        <button id="btnOpenPrintStudio" class="btn-secondary" style="border-color: rgba(6, 182, 212, 0.45); color: #38BDF8;" title="Estúdio de Criação de Placas (10x15cm) & Impressão A4 para Gráfica">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          Estúdio A4 & Gráfica
         </button>
 
         <button id="btnNewPlate" class="btn-primary">
@@ -691,7 +703,171 @@
         </div>
       </form>
     </div>
+  <!-- MODAL: Estúdio Gráfico & Impressão A4 (10x15cm) -->
+  <div class="modal-overlay modal-studio-overlay" id="printStudioModal" aria-hidden="true">
+    <div class="modal-card modal-card-studio">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="studio-badge-title">
+            <span class="studio-sparkle">🖨️</span>
+            <h3 class="modal-title">Estúdio Gráfico & Impressão A4 (10x15 cm)</h3>
+          </div>
+          <p class="modal-subtitle">Gere artes vetorizadas em 300 DPI prontas para gráfica nos modelos Branco ou Preto com sequência infinita de códigos únicos (PI-121...).</p>
+        </div>
+        <button class="btn-close" id="btnClosePrintStudio">&times;</button>
+      </div>
+
+      <div class="studio-body-layout">
+        <!-- Coluna da Esquerda: Controles de Criação e Impressão -->
+        <aside class="studio-sidebar-controls">
+          <!-- Modo de Origem -->
+          <div class="studio-control-group">
+            <label class="studio-group-label">Origem das Placas</label>
+            <div class="studio-segmented-pill">
+              <button type="button" class="studio-seg-btn active" id="tabModeBatch">✨ Gerar Novo Lote (PI-121...)</button>
+              <button type="button" class="studio-seg-btn" id="tabModeExisting">📋 Placas Já Cadastradas</button>
+            </div>
+          </div>
+
+          <!-- Configuração do Lote Sequencial -->
+          <div id="sectionBatchConfig">
+            <div class="studio-control-group">
+              <div class="studio-code-callout">
+                <div class="callout-code-header">
+                  <span>Próximo Código Livre:</span>
+                  <span class="badge-auto-code">⚡ Sequência Automática</span>
+                </div>
+                <div class="callout-code-val" id="studioNextCodeDisplay">PI-121</div>
+                <div class="callout-code-hint">Garantia: códigos únicos infinitos, nenhuma placa jamais repetirá o número.</div>
+              </div>
+            </div>
+
+            <div class="studio-control-group">
+              <label class="studio-group-label" for="studioBatchDestination">Link de Destino da Avaliação (Google Review)</label>
+              <input type="url" id="studioBatchDestination" class="studio-input" placeholder="https://g.page/r/.../review ou link personalizado" value="https://search.google.com/local/writereview">
+            </div>
+
+            <div class="studio-control-group" id="groupStudioAssignUser">
+              <label class="studio-group-label" for="studioAssignUser">Vincular Placas ao Cliente</label>
+              <select id="studioAssignUser" class="studio-select">
+                <!-- Populado dinamicamente -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Configuração de Placas Existentes -->
+          <div id="sectionExistingConfig" style="display: none;">
+            <div class="studio-control-group">
+              <label class="studio-group-label" for="studioSelectExistingPlates">Selecione a Placa para Impressão</label>
+              <select id="studioSelectExistingPlates" class="studio-select">
+                <!-- Populado dinamicamente com as placas do sistema -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Modelo Visual da Arte (Branco vs Preto) -->
+          <div class="studio-control-group">
+            <label class="studio-group-label">Modelo Visual da Placa (10 x 15 cm)</label>
+            <div class="theme-selection-grid">
+              <button type="button" class="theme-card-option active" data-theme="white" id="btnThemeWhite">
+                <div class="theme-card-preview preview-white">
+                  <div class="mini-bar"></div>
+                  <div class="mini-stars">★★★★★</div>
+                  <div class="mini-logo">Google</div>
+                </div>
+                <span class="theme-card-name">⚪ Clean Branco</span>
+              </button>
+
+              <button type="button" class="theme-card-option" data-theme="black" id="btnThemeBlack">
+                <div class="theme-card-preview preview-black">
+                  <div class="mini-bar"></div>
+                  <div class="mini-stars">★★★★★</div>
+                  <div class="mini-logo">Google</div>
+                </div>
+                <span class="theme-card-name">⚫ Black Premium</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Quantidade de Placas na Folha A4 -->
+          <div class="studio-control-group">
+            <label class="studio-group-label">Distribuição na Folha A4 (210 x 297 mm)</label>
+            <div class="layout-selection-grid">
+              <button type="button" class="layout-btn-option" data-layout="1" id="btnLayout1">
+                <span class="layout-num">1</span>
+                <span class="layout-text">1 Placa / A4<br><small>Centralizada</small></span>
+              </button>
+              <button type="button" class="layout-btn-option active" data-layout="2" id="btnLayout2">
+                <span class="layout-num">2</span>
+                <span class="layout-text">2 Placas / A4<br><small>Escala 1:1 Real</small></span>
+              </button>
+              <button type="button" class="layout-btn-option" data-layout="4" id="btnLayout4">
+                <span class="layout-num">4</span>
+                <span class="layout-text">4 Placas / A4<br><small>Grade Gráfica</small></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Opções Gráficas -->
+          <div class="studio-control-group">
+            <label class="checkbox-label" style="font-size: 0.85rem; color: #E2E8F0; cursor: pointer;">
+              <input type="checkbox" id="checkCropMarks" checked>
+              <span>Incluir marcas de corte para guilhotina da gráfica</span>
+            </label>
+          </div>
+
+          <!-- Botões de Download e Ação -->
+          <div class="studio-actions-stack">
+            <button type="button" class="btn-primary btn-generate-pdf" id="btnDownloadA4Pdf">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Baixar PDF A4 para Gráfica (300 DPI)</span>
+            </button>
+
+            <button type="button" class="btn-secondary" id="btnPrintA4Direct" style="width: 100%; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+              <span>Imprimir Diretamente no Navegador</span>
+            </button>
+          </div>
+        </aside>
+
+        <!-- Coluna da Direita: Mesa Gráfica com Preview da Folha A4 -->
+        <main class="studio-canvas-workspace">
+          <div class="canvas-header-bar">
+            <div class="canvas-spec-info">
+              <span>📄 <strong>Folha A4:</strong> 210 x 297 mm</span>
+              <span>📐 <strong>Placa Acrílico:</strong> 100 x 150 mm (10 x 15 cm)</span>
+              <span id="canvasPlatesSummary" class="badge-canvas-summary">2 Placas na Folha</span>
+            </div>
+
+            <div class="canvas-zoom-controls">
+              <span class="zoom-label">Visualização:</span>
+              <button type="button" class="btn-zoom active" data-zoom="0.6">60%</button>
+              <button type="button" class="btn-zoom" data-zoom="0.8">80%</button>
+              <button type="button" class="btn-zoom" data-zoom="1.0">100% (Real)</button>
+            </div>
+          </div>
+
+          <div class="canvas-viewport" id="canvasViewport">
+            <!-- Folha A4 Real -->
+            <div class="a4-sheet-container" id="a4PrintSheet">
+              <div class="a4-sheet-inner layout-2" id="a4SheetInner">
+                <!-- Placas renderizadas dinamicamente aqui -->
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
   </div>
+
 
   <!-- Toast Notification -->
   <div class="toast" id="toastNotification">

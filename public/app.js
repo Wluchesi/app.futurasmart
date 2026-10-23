@@ -47,6 +47,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const userFilterChipsList = document.getElementById('userFilterChipsList');
   const activeUserFilterPill = document.getElementById('activeUserFilterPill');
 
+  // DOM Elements - Print Studio & A4 Generator
+  const btnOpenPrintStudio = document.getElementById('btnOpenPrintStudio');
+  const printStudioModal = document.getElementById('printStudioModal');
+  const btnClosePrintStudio = document.getElementById('btnClosePrintStudio');
+  const tabModeBatch = document.getElementById('tabModeBatch');
+  const tabModeExisting = document.getElementById('tabModeExisting');
+  const sectionBatchConfig = document.getElementById('sectionBatchConfig');
+  const sectionExistingConfig = document.getElementById('sectionExistingConfig');
+  const studioNextCodeDisplay = document.getElementById('studioNextCodeDisplay');
+  const studioBatchDestination = document.getElementById('studioBatchDestination');
+  const studioAssignUser = document.getElementById('studioAssignUser');
+  const studioSelectExistingPlates = document.getElementById('studioSelectExistingPlates');
+  const btnThemeWhite = document.getElementById('btnThemeWhite');
+  const btnThemeBlack = document.getElementById('btnThemeBlack');
+  const btnLayout1 = document.getElementById('btnLayout1');
+  const btnLayout2 = document.getElementById('btnLayout2');
+  const btnLayout4 = document.getElementById('btnLayout4');
+  const checkCropMarks = document.getElementById('checkCropMarks');
+  const btnDownloadA4Pdf = document.getElementById('btnDownloadA4Pdf');
+  const btnPrintA4Direct = document.getElementById('btnPrintA4Direct');
+  const canvasPlatesSummary = document.getElementById('canvasPlatesSummary');
+  const a4PrintSheet = document.getElementById('a4PrintSheet');
+  const a4SheetInner = document.getElementById('a4SheetInner');
+
   // DOM Elements - Plates Section
   const platesGrid = document.getElementById('platesGrid');
   const platesCount = document.getElementById('platesCount');
@@ -461,6 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="plate-title-group">
                 <div class="plate-name">
                   ${escapeHtml(plate.name)}
+                  ${plate.code ? `<span class="badge-plate-code" style="margin-left:6px; font-size:0.75rem; background:rgba(6,182,212,0.18); color:#38BDF8; border:1px solid rgba(6,182,212,0.4); padding:2px 7px; border-radius:6px; font-weight:700;">${escapeHtml(plate.code)}</span>` : ''}
                 </div>
                 <span class="plate-location-badge">📍 ${escapeHtml(plate.location || 'Geral')}</span>
                 ${ownerBadge}
@@ -520,6 +545,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
               Estúdio QR & NFC
             </button>
+            <button class="btn-card-action btn-print-plate" data-id="${plate.id}" style="border-color: rgba(6, 182, 212, 0.45); color: #38BDF8;" title="Imprimir Arte 10x15cm no Estúdio A4">
+              🖨️ Imprimir 10x15
+            </button>
             <button class="btn-card-action btn-edit-plate" data-id="${plate.id}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               Editar
@@ -536,6 +564,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function attachCardListeners() {
+    // Imprimir arte 10x15 individual
+    document.querySelectorAll('.btn-print-plate').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        openPrintStudioModalWithPlate(id);
+      });
+    });
     // Copy link buttons
     document.querySelectorAll('.btn-icon-copy').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1249,6 +1284,427 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error(err);
     }
   }
+
+  // ==========================================
+  // ESTÚDIO GRÁFICO & IMPRESSÃO A4 (10x15 CM)
+  // ==========================================
+  let studioState = {
+    mode: 'batch', // 'batch' ou 'existing'
+    theme: 'white', // 'white' ou 'black'
+    layout: 2, // 1, 2 ou 4
+    showCropMarks: true,
+    nextCode: 'PI-121',
+    zoom: 0.6,
+    selectedPlateId: null
+  };
+
+  function setupStudioEventListeners() {
+    if (btnOpenPrintStudio) {
+      btnOpenPrintStudio.addEventListener('click', openPrintStudioModal);
+    }
+    if (btnClosePrintStudio) {
+      btnClosePrintStudio.addEventListener('click', closePrintStudioModal);
+    }
+
+    // Alternância de modo (Novo Lote vs Placas Existentes)
+    if (tabModeBatch && tabModeExisting) {
+      tabModeBatch.addEventListener('click', () => {
+        studioState.mode = 'batch';
+        tabModeBatch.classList.add('active');
+        tabModeExisting.classList.remove('active');
+        sectionBatchConfig.style.display = 'block';
+        sectionExistingConfig.style.display = 'none';
+        renderStudioSheet();
+      });
+
+      tabModeExisting.addEventListener('click', () => {
+        studioState.mode = 'existing';
+        tabModeExisting.classList.add('active');
+        tabModeBatch.classList.remove('active');
+        sectionBatchConfig.style.display = 'none';
+        sectionExistingConfig.style.display = 'block';
+        renderStudioSheet();
+      });
+    }
+
+    // Seleção de Tema (Branco vs Preto)
+    if (btnThemeWhite && btnThemeBlack) {
+      btnThemeWhite.addEventListener('click', () => {
+        studioState.theme = 'white';
+        btnThemeWhite.classList.add('active');
+        btnThemeBlack.classList.remove('active');
+        renderStudioSheet();
+      });
+
+      btnThemeBlack.addEventListener('click', () => {
+        studioState.theme = 'black';
+        btnThemeBlack.classList.add('active');
+        btnThemeWhite.classList.remove('active');
+        renderStudioSheet();
+      });
+    }
+
+    // Seleção de Layout (1, 2 ou 4 placas por folha)
+    const layoutBtns = [
+      { el: btnLayout1, val: 1 },
+      { el: btnLayout2, val: 2 },
+      { el: btnLayout4, val: 4 }
+    ];
+
+    layoutBtns.forEach(({ el, val }) => {
+      if (el) {
+        el.addEventListener('click', () => {
+          layoutBtns.forEach(b => b.el && b.el.classList.remove('active'));
+          el.classList.add('active');
+          studioState.layout = val;
+          renderStudioSheet();
+        });
+      }
+    });
+
+    // Toggle de marcas de corte
+    if (checkCropMarks) {
+      checkCropMarks.addEventListener('change', () => {
+        studioState.showCropMarks = checkCropMarks.checked;
+        renderStudioSheet();
+      });
+    }
+
+    // Select de placa existente
+    if (studioSelectExistingPlates) {
+      studioSelectExistingPlates.addEventListener('change', (e) => {
+        studioState.selectedPlateId = e.target.value;
+        renderStudioSheet();
+      });
+    }
+
+    // Zoom da mesa gráfica
+    document.querySelectorAll('.btn-zoom').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-zoom').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const zoom = parseFloat(btn.getAttribute('data-zoom') || '0.6');
+        studioState.zoom = zoom;
+        if (a4PrintSheet) {
+          a4PrintSheet.style.transform = `scale(${zoom})`;
+        }
+      });
+    });
+
+    // Baixar PDF para Gráfica
+    if (btnDownloadA4Pdf) {
+      btnDownloadA4Pdf.addEventListener('click', handleDownloadA4Pdf);
+    }
+
+    // Impressão Direta
+    if (btnPrintA4Direct) {
+      btnPrintA4Direct.addEventListener('click', () => {
+        window.print();
+      });
+    }
+  }
+
+  async function fetchNextPlateCode() {
+    try {
+      const res = await fetchWithAuth('/api/plates/next-code');
+      const data = await res.json();
+      if (data.success && data.nextCode) {
+        studioState.nextCode = data.nextCode;
+        if (studioNextCodeDisplay) {
+          studioNextCodeDisplay.textContent = data.nextCode;
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao buscar próximo código:', err);
+    }
+  }
+
+  async function openPrintStudioModal() {
+    await fetchNextPlateCode();
+
+    // Popula dropdown de clientes no estúdio
+    if (studioAssignUser) {
+      studioAssignUser.innerHTML = state.users.map(u => `
+        <option value="${u.id}" ${u.id === state.currentUser?.id ? 'selected' : ''}>
+          ${escapeHtml(u.name)} (${escapeHtml(u.email)})
+        </option>
+      `).join('') || `<option value="${state.currentUser?.id}">Você mesmo (${state.currentUser?.name})</option>`;
+    }
+
+    // Popula dropdown de placas existentes
+    if (studioSelectExistingPlates) {
+      studioSelectExistingPlates.innerHTML = state.plates.map(p => `
+        <option value="${p.id}">
+          ${p.code ? '[' + p.code + '] ' : ''}${escapeHtml(p.name)} (${escapeHtml(p.slug)})
+        </option>
+      `).join('') || '<option value="">Nenhuma placa cadastrada</option>';
+
+      if (state.plates.length > 0 && !studioState.selectedPlateId) {
+        studioState.selectedPlateId = state.plates[0].id;
+      }
+    }
+
+    // Aplica zoom inicial
+    if (a4PrintSheet) {
+      a4PrintSheet.style.transform = `scale(${studioState.zoom})`;
+    }
+
+    renderStudioSheet();
+    printStudioModal.classList.add('is-active');
+  }
+
+  function openPrintStudioModalWithPlate(plateId) {
+    studioState.mode = 'existing';
+    studioState.selectedPlateId = plateId;
+    if (tabModeExisting) tabModeExisting.classList.add('active');
+    if (tabModeBatch) tabModeBatch.classList.remove('active');
+    if (sectionBatchConfig) sectionBatchConfig.style.display = 'none';
+    if (sectionExistingConfig) sectionExistingConfig.style.display = 'block';
+
+    openPrintStudioModal();
+    if (studioSelectExistingPlates) {
+      studioSelectExistingPlates.value = plateId;
+    }
+  }
+
+  function closePrintStudioModal() {
+    printStudioModal.classList.remove('is-active');
+  }
+
+  // Gera o HTML da Arte Vetorial 10x15 cm de alta resolução
+  function renderPlateCardHtml(plateCode, plateSlug, theme, showCropMarks) {
+    const isDark = theme === 'black';
+    const host = window.location.host;
+    const protocol = window.location.protocol;
+    const redirectUrl = `${protocol}//${host}/r/${plateSlug}?src=qr`;
+
+    const cropMarksHtml = showCropMarks ? `
+      <div class="crop-marks-container">
+        <div class="crop-corner crop-tl"></div>
+        <div class="crop-corner crop-tr"></div>
+        <div class="crop-corner crop-bl"></div>
+        <div class="crop-corner crop-br"></div>
+      </div>
+    ` : '';
+
+    const qrEndpoint = `/api/qrcode/${plateSlug}?src=qr&bg=${isDark ? '18181b' : 'ffffff'}&color=${isDark ? 'ffffff' : '000000'}&margin=1`;
+
+    return `
+      <div class="print-plate-wrapper">
+        ${cropMarksHtml}
+        <div class="print-plate-card ${isDark ? 'theme-black' : 'theme-white'}">
+          <!-- Faixa Colorida Superior -->
+          <div class="plate-rainbow-bar"></div>
+
+          <!-- Corpo da Arte -->
+          <div class="plate-content-body">
+            <!-- Cabeçalho Google e Estrelas -->
+            <div class="plate-header-section">
+              <!-- Logo 3D Oficial Google G -->
+              <svg class="plate-google-g-logo" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              </svg>
+
+              <!-- 5 Estrelas Douradas -->
+              <div class="plate-stars-row">
+                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              </div>
+
+              <!-- Chamada Oficial -->
+              <h4 class="plate-title-rate">NOS AVALIE NO</h4>
+              <div class="plate-google-word">
+                <span class="g-blue">G</span><span class="g-red">o</span><span class="g-yellow">o</span><span class="g-blue">g</span><span class="g-green">l</span><span class="g-red">e</span>
+              </div>
+              <div class="plate-divider-line"></div>
+              <p class="plate-opinion-sub">SUA OPINIÃO FAZ A DIFERENÇA!</p>
+            </div>
+
+            <!-- Caixas Centrais Lado a Lado (QR Code + NFC) -->
+            <div class="plate-cards-duo">
+              <!-- Caixa QR Code -->
+              <div class="plate-card-column">
+                <div class="plate-frame-gradient">
+                  <div class="plate-frame-inner">
+                    <img src="${qrEndpoint}" class="qr-code-rendered-img" alt="QR Code">
+                    <div class="qr-center-google-badge">
+                      <svg viewBox="0 0 48 48" style="width:100%; height:100%;">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div class="plate-pill-instruction">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                  <span>Aponte sua câmera</span>
+                </div>
+              </div>
+
+              <!-- Caixa NFC Celular -->
+              <div class="plate-card-column">
+                <div class="plate-frame-gradient">
+                  <div class="plate-frame-inner">
+                    <svg class="nfc-phone-illustration" viewBox="0 0 64 64" fill="none">
+                      <rect x="18" y="8" width="28" height="48" rx="6" stroke="currentColor" stroke-width="2.6" fill="none"/>
+                      <line x1="28" y1="13" x2="36" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      <line x1="28" y1="51" x2="36" y2="51" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      <text x="32" y="35" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="10" fill="currentColor">NFC</text>
+                      <path d="M12 24 A 14 14 0 0 0 12 40" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                      <path d="M7 19 A 20 20 0 0 0 7 45" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                      <path d="M52 24 A 14 14 0 0 1 52 40" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                      <path d="M57 19 A 20 20 0 0 1 57 45" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                </div>
+                <div class="plate-pill-instruction">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><circle cx="12" cy="20" r="1"></circle></svg>
+                  <span>Aproxime seu celular</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rodapé da Placa: Código Sequencial e Assinatura -->
+            <div class="plate-footer-section">
+              <span class="plate-code-corner">${escapeHtml(plateCode)}</span>
+
+              <div class="plate-thanks-center">
+                <span class="plate-thanks-text">Obrigado!</span>
+                <svg class="plate-thanks-brush" viewBox="0 0 100 10" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="brushGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#4285F4"/>
+                      <stop offset="30%" stop-color="#EA4335"/>
+                      <stop offset="70%" stop-color="#FBBC05"/>
+                      <stop offset="100%" stop-color="#34A853"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M 0,5 Q 25,0 50,5 T 100,5" stroke="url(#brushGrad)" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+                </svg>
+              </div>
+
+              <span style="width: 14mm;"></span>
+            </div>
+          </div>
+
+          <!-- Faixa Colorida Inferior -->
+          <div class="plate-rainbow-bar"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderStudioSheet() {
+    if (!a4SheetInner) return;
+
+    const count = studioState.layout;
+    a4SheetInner.className = `a4-sheet-inner layout-${count}`;
+
+    if (canvasPlatesSummary) {
+      canvasPlatesSummary.textContent = `${count} Placa(s) na Folha (10x15cm)`;
+    }
+
+    let cardsHtml = '';
+
+    if (studioState.mode === 'batch') {
+      const baseNumStr = studioState.nextCode.replace('PI-', '');
+      let baseNum = parseInt(baseNumStr, 10);
+      if (isNaN(baseNum)) baseNum = 121;
+
+      for (let i = 0; i < count; i++) {
+        const currentCode = `PI-${baseNum + i}`;
+        const currentSlug = `pi-${baseNum + i}`;
+        cardsHtml += renderPlateCardHtml(currentCode, currentSlug, studioState.theme, studioState.showCropMarks);
+      }
+    } else {
+      // Modo de placas existentes
+      const plate = state.plates.find(p => p.id === studioState.selectedPlateId) || state.plates[0];
+      const code = plate?.code || 'PI-121';
+      const slug = plate?.slug || 'placa';
+
+      for (let i = 0; i < count; i++) {
+        cardsHtml += renderPlateCardHtml(code, slug, studioState.theme, studioState.showCropMarks);
+      }
+    }
+
+    a4SheetInner.innerHTML = cardsHtml;
+  }
+
+  async function handleDownloadA4Pdf() {
+    if (!a4PrintSheet) return;
+
+    try {
+      showToast('Processando e gerando PDF para gráfica em 300 DPI...');
+
+      // Se estiver no modo lote, persiste no banco para ativar os links e os chips NFC
+      if (studioState.mode === 'batch') {
+        const destinationUrl = studioBatchDestination?.value?.trim() || 'https://google.com';
+        const assignedUserId = studioAssignUser?.value;
+
+        const res = await fetchWithAuth('/api/plates/batch-generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            count: studioState.layout,
+            destinationUrl,
+            assignedUserId,
+            type: 'google'
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          await fetchPlates();
+          await fetchNextPlateCode();
+        }
+      }
+
+      // Prepara opções do html2pdf para escala exata A4 sem distorção
+      const opt = {
+        margin: 0,
+        filename: `folha-grafica-a4-${studioState.theme}-${Date.now()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 3, // 300 DPI real
+          useCORS: true,
+          letterRendering: true,
+          scrollX: 0,
+          scrollY: 0
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait'
+        }
+      };
+
+      // Reseta zoom temporariamente para renderizar em 100% no canvas do PDF
+      const currentTransform = a4PrintSheet.style.transform;
+      a4PrintSheet.style.transform = 'scale(1)';
+
+      await html2pdf().set(opt).from(a4PrintSheet).save();
+
+      // Restaura zoom da interface
+      a4PrintSheet.style.transform = currentTransform;
+
+      showToast('PDF para gráfica baixado com sucesso!');
+      renderStudioSheet();
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      showToast('Erro ao exportar PDF. Tente usar a opção de impressão direta.', true);
+    }
+  }
+
+  // Inicializa listeners do estúdio
+  setupStudioEventListeners();
 
   // ==========================================
   // TOAST NOTIFICATION

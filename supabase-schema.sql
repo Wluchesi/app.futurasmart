@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS public.plates (
   id TEXT PRIMARY KEY,
   user_id TEXT REFERENCES public.users(id) ON DELETE SET NULL,
   slug TEXT UNIQUE NOT NULL,
+  code TEXT,
   name TEXT NOT NULL,
   location TEXT DEFAULT 'Balcão',
   type TEXT DEFAULT 'google',
@@ -31,6 +32,7 @@ CREATE TABLE IF NOT EXISTS public.plates (
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+ALTER TABLE public.plates ADD COLUMN IF NOT EXISTS code TEXT;
 
 -- 3. Tabela de Auditoria e Logs de Redirecionamento
 CREATE TABLE IF NOT EXISTS public.logs (
@@ -61,7 +63,7 @@ ALTER TABLE public.logs DISABLE ROW LEVEL SECURITY;
 INSERT INTO public.users (id, name, email, whatsapp, password, role)
 VALUES (
   'usr-admin-01',
-  'W Luchesi',
+  'Wellington Luchesi',
   'wluchesi@gmail.com',
   '(11) 99999-9999',
   'C@n@l4141',
