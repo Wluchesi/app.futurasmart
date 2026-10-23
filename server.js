@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const crypto = require('crypto');
 const QRCode = require('qrcode');
 const db = require('./lib/supabase');
 
@@ -21,8 +22,39 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Simple in-memory session tokens store
-const activeTokens = new Map();
+// Stateless Session Token Engine (100% compatível com Serverless e Netlify Functions)
+const TOKEN_SECRET = process.env.TOKEN_SECRET || 'futura-smart-nfc-token-secret-key-2026';
+
+function generateToken(user) {
+  const payload = Buffer.from(JSON.stringify({
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    iat: Date.now()
+  })).toString('base64url');
+
+  const signature = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function verifyToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+
+  const [payload, signature] = parts;
+  const expectedSig = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('base64url');
+  if (signature !== expectedSig) return null;
+
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf-8'));
+    // Válido por 30 dias
+    if (Date.now() - data.iat > 30 * 24 * 60 * 60 * 1000) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
 
 // Seed Super Admin Account in Database
 async function seedAdmin() {
@@ -70,13 +102,16 @@ async function authenticate(req, res, next) {
   }
 
   const token = authHeader.split(' ')[1];
-  const userId = activeTokens.get(token);
+  const tokenData = verifyToken(token);
 
-  if (!userId) {
+  if (!tokenData || !tokenData.userId) {
     return res.status(401).json({ success: false, message: 'Sessão expirada ou inválida. Faça login novamente.' });
   }
 
-  const user = await db.getUserById(userId);
+  let user = await db.getUserById(tokenData.userId);
+  if (!user && tokenData.email) {
+    user = await db.getUserByEmail(tokenData.email);
+  }
 
   if (!user) {
     return res.status(401).json({ success: false, message: 'Usuário não encontrado.' });
@@ -243,8 +278,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     await db.createUser(newUser);
 
-    const token = 'tok_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-    activeTokens.set(token, newUser.id);
+    const token = generateToken(newUser);
 
     res.status(201).json({
       success: true,
@@ -274,8 +308,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'E-mail ou senha incorretos.' });
     }
 
-    const token = 'tok_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-    activeTokens.set(token, user.id);
+    const token = generateToken(user);
 
     res.json({
       success: true,
