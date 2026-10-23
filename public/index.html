@@ -198,10 +198,43 @@
         </div>
       </section>
 
+      <!-- Admin User Filter Ribbon (Exclusivo Administradores) -->
+      <section class="admin-user-filter-section" id="adminUserFilterSection" style="display: none;">
+        <div class="user-filter-card">
+          <div class="user-filter-header-row">
+            <div class="user-filter-heading">
+              <span class="user-filter-badge-icon">👥</span>
+              <div>
+                <h4 class="user-filter-title">Visualizar Placas por Cliente / Usuário</h4>
+                <p class="user-filter-subtitle">Isole e gerencie exclusivamente as placas de cada cliente cadastrado:</p>
+              </div>
+            </div>
+
+            <div class="user-filter-controls">
+              <div class="user-filter-select-box">
+                <select id="selectPlateUserFilter" class="user-filter-select">
+                  <option value="all">📂 Todos os Clientes & Usuários</option>
+                </select>
+              </div>
+              <button id="btnClearUserFilter" class="btn-clear-user-filter" style="display: none;" title="Mostrar placas de todos os usuários">
+                ✖ Ver Todos
+              </button>
+            </div>
+          </div>
+
+          <div class="user-filter-chips-list" id="userFilterChipsList">
+            <!-- Chips gerados dinamicamente via JS -->
+          </div>
+        </div>
+      </section>
+
       <!-- Plates Grid Section -->
       <section class="plates-section">
         <div class="section-header">
-          <h3 class="section-title">Placas Inteligentes Cadastradas (<span id="platesCount">0</span>)</h3>
+          <div class="section-title-wrap">
+            <h3 class="section-title">Placas Inteligentes Cadastradas (<span id="platesCount">0</span>)</h3>
+            <span class="active-user-filter-pill" id="activeUserFilterPill" style="display: none;"></span>
+          </div>
           <div class="live-legend">
             <span class="legend-item"><span class="dot-legend dot-nfc"></span> NFC Tag</span>
             <span class="legend-item"><span class="dot-legend dot-qr"></span> QR Code</span>

@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     users: [],
     analytics: null,
     activeFilter: 'all',
+    selectedUserFilter: 'all',
     searchQuery: '',
     selectedPlateForStudio: null,
   };
@@ -38,6 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const valQrScans = document.getElementById('valQrScans');
   const qrProgressBar = document.getElementById('qrProgressBar');
   const qrRatioText = document.getElementById('qrRatioText');
+
+  // DOM Elements - Admin User Filter Ribbon
+  const adminUserFilterSection = document.getElementById('adminUserFilterSection');
+  const selectPlateUserFilter = document.getElementById('selectPlateUserFilter');
+  const btnClearUserFilter = document.getElementById('btnClearUserFilter');
+  const userFilterChipsList = document.getElementById('userFilterChipsList');
+  const activeUserFilterPill = document.getElementById('activeUserFilterPill');
 
   // DOM Elements - Plates Section
   const platesGrid = document.getElementById('platesGrid');
@@ -182,9 +190,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (state.currentUser.role === 'admin') {
       btnOpenUsersModal.style.display = 'inline-flex';
+      if (adminUserFilterSection) adminUserFilterSection.style.display = 'block';
       fetchUsersList();
     } else {
       btnOpenUsersModal.style.display = 'none';
+      if (adminUserFilterSection) adminUserFilterSection.style.display = 'none';
     }
   }
 
@@ -208,7 +218,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleLogout() {
     state.currentUser = null;
     state.token = null;
+    state.selectedUserFilter = 'all';
     localStorage.removeItem('futura_smart_token');
+    if (adminUserFilterSection) adminUserFilterSection.style.display = 'none';
     openAuthModal();
     showToast('Você saiu do sistema.');
   }
@@ -313,6 +325,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.success) {
         state.plates = data.plates;
         renderPlates();
+        if (state.currentUser?.role === 'admin') {
+          updateUserFilterUI();
+        }
       }
     } catch (err) {
       console.error('Erro ao buscar placas:', err);
@@ -356,6 +371,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   function renderPlates() {
     const filtered = state.plates.filter(plate => {
+      // Filtro por Usuário Específico (Admin)
+      if (state.selectedUserFilter && state.selectedUserFilter !== 'all') {
+        if (plate.userId !== state.selectedUserFilter) return false;
+      }
+
       if (state.activeFilter === 'active' && !plate.isActive) return false;
       if (state.activeFilter === 'paused' && plate.isActive) return false;
       if (['google', 'instagram', 'whatsapp', 'menu'].includes(state.activeFilter)) {
@@ -377,6 +397,30 @@ document.addEventListener('DOMContentLoaded', () => {
     platesCount.textContent = filtered.length;
 
     if (filtered.length === 0) {
+      if (state.selectedUserFilter && state.selectedUserFilter !== 'all') {
+        const selectedUser = state.users.find(u => u.id === state.selectedUserFilter);
+        const userName = selectedUser ? selectedUser.name : 'este cliente';
+        platesGrid.innerHTML = `
+          <div class="loading-state" style="padding: 40px 20px;">
+            <div style="font-size: 2.2rem; margin-bottom: 8px;">📭</div>
+            <h4 style="color:#FFFFFF; font-size:1.05rem; margin-bottom:6px;">Nenhuma placa cadastrada para ${escapeHtml(userName)}</h4>
+            <p style="color:var(--text-muted); font-size:0.85rem; max-width:420px; margin:0 auto 16px auto;">Este usuário ainda não possui nenhuma placa inteligente NFC ou QR Code configurada.</p>
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+              <button class="btn-primary" id="btnCreateForUserNow">+ Cadastrar Placa para ${escapeHtml(userName)}</button>
+              <button class="btn-secondary" id="btnResetFilterToAll">Ver Todas as Placas</button>
+            </div>
+          </div>
+        `;
+        const btnCreate = document.getElementById('btnCreateForUserNow');
+        if (btnCreate) btnCreate.addEventListener('click', () => {
+          openNewPlateModal();
+          if (formAssignUser) formAssignUser.value = state.selectedUserFilter;
+        });
+        const btnReset = document.getElementById('btnResetFilterToAll');
+        if (btnReset) btnReset.addEventListener('click', () => setUserFilter('all'));
+        return;
+      }
+
       platesGrid.innerHTML = `
         <div class="loading-state">
           <p>Nenhuma placa inteligente cadastrada para este usuário.</p>
@@ -585,6 +629,19 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
+    // Admin User Filter Select & Clear Button
+    if (selectPlateUserFilter) {
+      selectPlateUserFilter.addEventListener('change', (e) => {
+        setUserFilter(e.target.value);
+      });
+    }
+
+    if (btnClearUserFilter) {
+      btnClearUserFilter.addEventListener('click', () => {
+        setUserFilter('all');
+      });
+    }
+
     // Open New Plate Modal
     btnNewPlate.addEventListener('click', () => {
       openNewPlateModal();
@@ -670,7 +727,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Se admin, permite escolher usuário dono
     if (state.currentUser?.role === 'admin') {
       groupAssignUser.style.display = 'block';
-      populateAssignUsersDropdown(state.currentUser.id);
+      const defaultOwner = (state.selectedUserFilter && state.selectedUserFilter !== 'all')
+        ? state.selectedUserFilter
+        : state.currentUser.id;
+      populateAssignUsersDropdown(defaultOwner);
     } else {
       groupAssignUser.style.display = 'none';
     }
@@ -761,8 +821,91 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // GESTÃO DE USUÁRIOS (ADMIN ONLY)
+  // GESTÃO DE USUÁRIOS & SEPARAÇÃO DE PLACAS (ADMIN ONLY)
   // ==========================================
+  function setUserFilter(userId) {
+    state.selectedUserFilter = userId;
+
+    if (selectPlateUserFilter) {
+      selectPlateUserFilter.value = userId;
+    }
+
+    // Atualiza chips visuais
+    document.querySelectorAll('.user-filter-chip').forEach(chip => {
+      chip.classList.toggle('active', chip.getAttribute('data-user') === userId);
+    });
+
+    // Atualiza badge de filtro ativo e botão de limpar
+    if (userId !== 'all') {
+      if (btnClearUserFilter) btnClearUserFilter.style.display = 'inline-flex';
+      const selectedUser = state.users.find(u => u.id === userId);
+      const name = selectedUser ? selectedUser.name : 'Cliente';
+      if (activeUserFilterPill) {
+        activeUserFilterPill.style.display = 'inline-flex';
+        activeUserFilterPill.innerHTML = `👤 Cliente: <strong>${escapeHtml(name)}</strong> <button class="btn-pill-remove" title="Remover filtro de cliente">&times;</button>`;
+        const removeBtn = activeUserFilterPill.querySelector('.btn-pill-remove');
+        if (removeBtn) removeBtn.addEventListener('click', () => setUserFilter('all'));
+      }
+    } else {
+      if (btnClearUserFilter) btnClearUserFilter.style.display = 'none';
+      if (activeUserFilterPill) {
+        activeUserFilterPill.style.display = 'none';
+        activeUserFilterPill.innerHTML = '';
+      }
+    }
+
+    renderPlates();
+  }
+
+  function updateUserFilterUI() {
+    if (!selectPlateUserFilter || !userFilterChipsList) return;
+    if (state.currentUser?.role !== 'admin') return;
+
+    const totalPlates = state.plates.length;
+
+    // Popula o select dropdown
+    let selectHtml = `<option value="all">📂 Todos os Clientes & Usuários (${totalPlates} placas)</option>`;
+    
+    // Popula os chips rápidos
+    let chipsHtml = `
+      <button class="user-filter-chip ${state.selectedUserFilter === 'all' ? 'active' : ''}" data-user="all">
+        <span>📂 Todos os Clientes</span>
+        <span class="chip-count">${totalPlates}</span>
+      </button>
+    `;
+
+    state.users.forEach(u => {
+      const userPlates = state.plates.filter(p => p.userId === u.id);
+      const count = userPlates.length;
+      const isAdminUser = u.role === 'admin';
+      const label = `${u.name} (${u.email})${isAdminUser ? ' ⭐' : ''}`;
+
+      selectHtml += `
+        <option value="${u.id}" ${state.selectedUserFilter === u.id ? 'selected' : ''}>
+          👤 ${escapeHtml(label)} — ${count} placa(s)
+        </option>
+      `;
+
+      chipsHtml += `
+        <button class="user-filter-chip ${state.selectedUserFilter === u.id ? 'active' : ''}" data-user="${u.id}" title="${escapeHtml(u.email)}">
+          <span>${isAdminUser ? '⭐' : '👤'} ${escapeHtml(u.name)}</span>
+          <span class="chip-count">${count}</span>
+        </button>
+      `;
+    });
+
+    selectPlateUserFilter.innerHTML = selectHtml;
+    userFilterChipsList.innerHTML = chipsHtml;
+
+    // Conecta cliques aos chips
+    userFilterChipsList.querySelectorAll('.user-filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const userId = chip.getAttribute('data-user');
+        setUserFilter(userId);
+      });
+    });
+  }
+
   async function fetchUsersList() {
     try {
       const res = await fetchWithAuth('/api/users');
@@ -771,6 +914,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.users = data.users;
         usersTotalCount.textContent = `Total: ${data.users.length} usuários cadastrados`;
         renderUsersTable(data.users);
+        updateUserFilterUI();
       }
     } catch (err) {
       console.error('Erro ao buscar usuários:', err);
