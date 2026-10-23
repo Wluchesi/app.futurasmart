@@ -1163,8 +1163,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // STUDIO MODAL (NFC & QR MOCKUP)
   // ==========================================
   function openStudioModal(id) {
-    const plate = state.plates.find(p => p.id === id);
-    if (!plate) return;
+    const plate = state.plates.find(p => String(p.id) === String(id));
+    if (!plate) {
+      console.warn('Placa não encontrada para estúdio:', id);
+      return;
+    }
 
     state.selectedPlateForStudio = plate;
 

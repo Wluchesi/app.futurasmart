@@ -1,6 +1,24 @@
 {
   "plates": [
     {
+      "id": "plk-rqmx94d",
+      "userId": "usr-admin-01",
+      "slug": "pl-121",
+      "name": "PL-121",
+      "location": "Balcão / Entrada",
+      "type": "google",
+      "destinationUrl": "https://google.com",
+      "isActive": true,
+      "notes": "",
+      "createdAt": "2026-10-23T22:41:46.224Z",
+      "updatedAt": "2026-10-23T22:41:46.224Z",
+      "scans": {
+        "total": 0,
+        "nfc": 0,
+        "qr": 0
+      }
+    },
+    {
       "id": "plk-pv2y3m4",
       "userId": "usr-gq1mkik",
       "slug": "barbearia-don-ruan",
