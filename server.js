@@ -7,7 +7,9 @@ const QRCode = require('qrcode');
 const db = require('./lib/supabase');
 
 const app = express();
+app.set('trust proxy', true);
 const PORT = process.env.PORT || 3000;
+
 
 // Netlify Functions path rewrite support
 app.use((req, res, next) => {
@@ -791,12 +793,20 @@ app.get('/api/qrcode/:slug', async (req, res) => {
     const { slug } = req.params;
     const format = (req.query.format || 'png').toLowerCase();
     const source = (req.query.src || 'qr').toLowerCase();
-    const colorDark = req.query.color || '#000000';
-    const colorLight = req.query.bg || '#ffffff';
+    let colorDark = req.query.color || '#000000';
+    let colorLight = req.query.bg || '#ffffff';
     const margin = parseInt(req.query.margin || '2', 10);
 
-    const protocol = req.protocol;
-    const host = req.get('host');
+    // Normaliza valores hexadecimais sem #
+    if (colorDark && !colorDark.startsWith('#') && /^[0-9a-fA-F]{3,8}$/.test(colorDark)) {
+      colorDark = '#' + colorDark;
+    }
+    if (colorLight && !colorLight.startsWith('#') && /^[0-9a-fA-F]{3,8}$/.test(colorLight)) {
+      colorLight = '#' + colorLight;
+    }
+
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+    const host = req.headers['x-forwarded-host'] || req.get('host');
     const redirectUrl = `${protocol}://${host}/r/${slug}?src=${source}`;
 
     const qrOptions = {
@@ -811,12 +821,15 @@ app.get('/api/qrcode/:slug', async (req, res) => {
 
     if (format === 'svg') {
       const svgString = await QRCode.toString(redirectUrl, { ...qrOptions, type: 'svg' });
-      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
       return res.send(svgString);
     } else {
       const buffer = await QRCode.toBuffer(redirectUrl, qrOptions);
       res.setHeader('Content-Type', 'image/png');
-      return res.send(buffer);
+      res.setHeader('Content-Length', buffer.length);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.end(buffer);
     }
   } catch (err) {
     console.error('Erro ao gerar QRCode:', err);

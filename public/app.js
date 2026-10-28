@@ -1162,7 +1162,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // STUDIO MODAL (NFC & QR MOCKUP)
   // ==========================================
-  function openStudioModal(id) {
+  async function openStudioModal(id) {
     const plate = state.plates.find(p => String(p.id) === String(id));
     if (!plate) {
       console.warn('Placa não encontrada para estúdio:', id);
@@ -1173,8 +1173,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const host = window.location.host;
     const protocol = window.location.protocol;
+    const redirectUrl = `${protocol}//${host}/r/${plate.slug}?src=qr`;
     const nfcUrl = `${protocol}//${host}/r/${plate.slug}?src=nfc`;
-    const qrEndpoint = `/api/qrcode/${plate.slug}?src=qr`;
+    const qrEndpoint = `/api/qrcode/${plate.slug}?src=qr&format=svg`;
 
     studioSubtitle.textContent = `Plaquinha: ${plate.name} (${plate.location || 'Balcão'})`;
     mockupBrand.textContent = plate.name;
@@ -1188,12 +1189,38 @@ document.addEventListener('DOMContentLoaded', () => {
       custom: '🔗'
     };
     mockupCenterLogo.textContent = logos[plate.type] || '⭐';
-    mockupQrImage.src = qrEndpoint;
+
+    // Gera o QR Code com prioridade para DataURL instantâneo (alta fidelidade e sem lag de rede)
+    if (window.QRCode && window.QRCode.toDataURL) {
+      try {
+        const qrDataUrl = await window.QRCode.toDataURL(redirectUrl, {
+          margin: 1,
+          width: 600,
+          errorCorrectionLevel: 'H'
+        });
+        mockupQrImage.src = qrDataUrl;
+        btnDownloadPng.href = qrDataUrl;
+        btnDownloadPng.download = `qrcode-${plate.slug}.png`;
+      } catch (err) {
+        console.warn('Geração local do QR Code falhou, usando endpoint:', err);
+        mockupQrImage.src = qrEndpoint;
+        btnDownloadPng.href = `/api/qrcode/${plate.slug}?src=qr&format=png`;
+        btnDownloadPng.download = `qrcode-${plate.slug}.png`;
+      }
+    } else {
+      mockupQrImage.src = qrEndpoint;
+      btnDownloadPng.href = `/api/qrcode/${plate.slug}?src=qr&format=png`;
+      btnDownloadPng.download = `qrcode-${plate.slug}.png`;
+    }
+
+    // Fallback de erro da imagem para o endpoint SVG ou regerar
+    mockupQrImage.onerror = () => {
+      if (!mockupQrImage.src.includes('format=svg')) {
+        mockupQrImage.src = qrEndpoint;
+      }
+    };
 
     nfcUrlInput.value = nfcUrl;
-
-    btnDownloadPng.href = `/api/qrcode/${plate.slug}?src=qr&format=png`;
-    btnDownloadPng.download = `qrcode-${plate.slug}.png`;
 
     btnDownloadSvg.href = `/api/qrcode/${plate.slug}?src=qr&format=svg`;
     btnDownloadSvg.download = `qrcode-${plate.slug}.svg`;
@@ -1490,7 +1517,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     ` : '';
 
-    const qrEndpoint = `/api/qrcode/${plateSlug}?src=qr&bg=${isDark ? '18181b' : 'ffffff'}&color=${isDark ? 'ffffff' : '000000'}&margin=1`;
+    const qrEndpoint = `/api/qrcode/${plateSlug}?src=qr&format=svg&bg=${isDark ? '18181b' : 'ffffff'}&color=${isDark ? 'ffffff' : '000000'}&margin=1`;
 
     return `
       <div class="print-plate-wrapper">
@@ -1535,7 +1562,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="plate-card-column">
                 <div class="plate-frame-gradient">
                   <div class="plate-frame-inner">
-                    <img src="${qrEndpoint}" class="qr-code-rendered-img" alt="QR Code">
+                    <img src="${qrEndpoint}" data-slug="${plateSlug}" class="qr-code-rendered-img" alt="QR Code">
                     <div class="qr-center-google-badge">
                       <svg viewBox="0 0 48 48" style="width:100%; height:100%;">
                         <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -1639,6 +1666,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     a4SheetInner.innerHTML = cardsHtml;
+
+    // Se QRCode client-side estiver disponível, gera Data URLs locais em altíssima definição (instantâneo e sem CORS para html2pdf)
+    if (window.QRCode && window.QRCode.toDataURL) {
+      const qrImgs = a4SheetInner.querySelectorAll('.qr-code-rendered-img');
+      const isDark = studioState.theme === 'black';
+      qrImgs.forEach(async (img) => {
+        const slug = img.getAttribute('data-slug');
+        if (!slug) return;
+        const redirectUrl = `${window.location.protocol}//${window.location.host}/r/${slug}?src=qr`;
+        try {
+          const dUrl = await window.QRCode.toDataURL(redirectUrl, {
+            margin: 1,
+            width: 600,
+            errorCorrectionLevel: 'H',
+            color: {
+              dark: isDark ? '#ffffff' : '#000000',
+              light: isDark ? '#18181b' : '#ffffff'
+            }
+          });
+          img.src = dUrl;
+        } catch (e) {
+          // Mantém o src SVG original caso ocorra exceção
+        }
+      });
+    }
   }
 
   async function handleDownloadA4Pdf() {
