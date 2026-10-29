@@ -1,6 +1,30 @@
 {
   "plates": [
     {
+      "id": "plk-muthhzh",
+      "userId": "usr-admin-01",
+      "slug": "pi-121",
+      "name": "Placa Inteligente PI-121",
+      "code": "PI-121",
+      "theme": "white",
+      "sharedWith": [
+        "usr-admin-01",
+        "usr-chiara-02"
+      ],
+      "location": "Balcão",
+      "type": "google",
+      "destinationUrl": "https://www.google.com/",
+      "isActive": true,
+      "notes": "Gerada em Lote [PI-121] [THEME:white] [SHARED:usr-admin-01,usr-chiara-02]",
+      "createdAt": "2026-10-29T16:57:04.58+00:00",
+      "updatedAt": "2026-10-29T18:04:50.473Z",
+      "scans": {
+        "total": 0,
+        "nfc": 0,
+        "qr": 0
+      }
+    },
+    {
       "id": "plk-h8dmfgl",
       "userId": "usr-admin-01",
       "slug": "pi-102",

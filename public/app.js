@@ -129,7 +129,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const plateForm = document.getElementById('plateForm');
   const modalPlateTitle = document.getElementById('modalPlateTitle');
   const groupAssignUser = document.getElementById('groupAssignUser');
-  const formAssignUser = document.getElementById('formAssignUser');
+  const formAssignUsersContainer = document.getElementById('formAssignUsersContainer');
+
+  const sharePlateModal = document.getElementById('sharePlateModal');
+  const btnCloseSharePlateModal = document.getElementById('btnCloseSharePlateModal');
+  const btnCancelSharePlate = document.getElementById('btnCancelSharePlate');
+  const btnSaveSharePlate = document.getElementById('btnSaveSharePlate');
+  const sharePlateModalTitle = document.getElementById('sharePlateModalTitle');
+  const sharePlateModalSubtitle = document.getElementById('sharePlateModalSubtitle');
+  const shareUsersListContainer = document.getElementById('shareUsersListContainer');
+  const btnShareSelectAll = document.getElementById('btnShareSelectAll');
+  const btnShareClearAll = document.getElementById('btnShareClearAll');
+  let currentSharePlateId = null;
 
   const studioModal = document.getElementById('studioModal');
   const btnCloseStudio = document.getElementById('btnCloseStudio');
@@ -452,9 +463,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   function renderPlates() {
     const filtered = state.plates.filter(plate => {
-      // Filtro por Usuário Específico (Admin)
+      // Filtro por Usuário Específico (Admin): exibe se for dono OU se estiver compartilhado
       if (state.selectedUserFilter && state.selectedUserFilter !== 'all') {
-        if (plate.userId !== state.selectedUserFilter) return false;
+        const isOwner = plate.userId === state.selectedUserFilter;
+        const isShared = Array.isArray(plate.sharedWith) && plate.sharedWith.includes(state.selectedUserFilter);
+        if (!isOwner && !isShared) return false;
       }
 
       if (state.activeFilter === 'active' && !plate.isActive) return false;
@@ -498,7 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnCreate = document.getElementById('btnCreateForUserNow');
         if (btnCreate) btnCreate.addEventListener('click', () => {
           openNewPlateModal();
-          if (formAssignUser) formAssignUser.value = state.selectedUserFilter;
+          populateAssignUsersDropdown([state.selectedUserFilter]);
         });
         const btnReset = document.getElementById('btnResetFilterToAll');
         if (btnReset) btnReset.addEventListener('click', () => setUserFilter('all'));
@@ -533,21 +546,35 @@ document.addEventListener('DOMContentLoaded', () => {
       const qrCount = plate.scans?.qr || 0;
       const totalCount = plate.scans?.total || 0;
 
-      // Se for Admin, mostra etiqueta e seletor rápido para atribuir a cliente com 1 clique
+      // Se for Admin, mostra etiqueta e botão para gerenciar múltiplos usuários simultaneamente
       let ownerBadge = '';
       if (isAdmin) {
-        const userOptions = (state.users || []).map(u => {
-          const isSelected = plate.userId === u.id;
-          const roleTag = u.role === 'admin' ? ' (Admin)' : '';
-          return `<option value="${escapeHtml(u.id)}" ${isSelected ? 'selected' : ''}>${escapeHtml(u.name)}${roleTag}</option>`;
-        }).join('');
+        const sharedList = Array.isArray(plate.sharedWith) ? plate.sharedWith : [];
+        const allUserIds = Array.from(new Set([plate.userId, ...sharedList].filter(Boolean)));
+        
+        const userNames = allUserIds.map(uid => {
+          const u = (state.users || []).find(usr => usr.id === uid);
+          return u ? u.name : (uid === plate.userId ? (plate.ownerName || 'Cliente') : uid);
+        });
+
+        let userSummaryText = '';
+        if (allUserIds.length === 0) {
+          userSummaryText = 'Nenhum usuário';
+        } else if (allUserIds.length === 1) {
+          userSummaryText = userNames[0];
+        } else if (allUserIds.length === 2) {
+          userSummaryText = `${userNames[0]} e ${userNames[1]}`;
+        } else {
+          userSummaryText = `${userNames[0]} +${allUserIds.length - 1} outros`;
+        }
 
         ownerBadge = `
-          <div class="plate-owner-select-wrapper" title="Visível para o cliente selecionado. Altere com 1 clique!">
-            <span class="owner-icon">👤</span>
-            <select class="quick-assign-user-select" data-id="${plate.id}" title="Alterar para quem esta placa fica visível">
-              ${userOptions || `<option value="${plate.userId}">${escapeHtml(plate.ownerName || 'Cliente')}</option>`}
-            </select>
+          <div class="plate-multi-users-badge-row">
+            <button type="button" class="btn-manage-plate-access" data-id="${plate.id}" title="Disponível para: ${escapeHtml(userNames.join(', '))}. Clique para gerenciar o acesso de múltiplos usuários simultaneamente!">
+              <span class="access-icon">👥</span>
+              <span class="access-label">Disponível para: <strong>${escapeHtml(userSummaryText)}</strong></span>
+              <span class="access-edit-hint">⚙️ Gerenciar (${allUserIds.length})</span>
+            </button>
           </div>
         `;
       }
@@ -679,31 +706,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Seletor rápido de cliente no card da placa (1 clique)
-    document.querySelectorAll('.quick-assign-user-select').forEach(sel => {
-      sel.addEventListener('change', async () => {
-        const plateId = sel.getAttribute('data-id');
-        const targetUserId = sel.value;
-        const targetUser = (state.users || []).find(u => u.id === targetUserId);
-        const targetName = targetUser ? targetUser.name : 'novo cliente';
-        try {
-          const res = await fetchWithAuth(`/api/plates/${plateId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ assignedUserId: targetUserId })
-          });
-          const data = await res.json();
-          if (data.success) {
-            showToast(`Placa agora está visível para ${targetName}!`);
-            await fetchPlates();
-            if (state.currentUser?.role === 'admin') fetchUsersList();
-          } else {
-            showToast(data.message || 'Erro ao alterar cliente da placa.', true);
-          }
-        } catch (err) {
-          console.error(err);
-          showToast('Erro de conexão ao alterar cliente.', true);
-        }
+    // Gerenciador de múltiplos usuários no card da placa (Abre modal de compartilhamento)
+    document.querySelectorAll('.btn-manage-plate-access').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const plateId = btn.getAttribute('data-id');
+        openSharePlateModal(plateId);
       });
     });
 
@@ -997,6 +1006,67 @@ document.addEventListener('DOMContentLoaded', () => {
     btnClosePlateModal.addEventListener('click', closePlateModal);
     btnCancelPlate.addEventListener('click', closePlateModal);
 
+    // Modal de Compartilhamento para Múltiplos Usuários
+    if (btnCloseSharePlateModal) btnCloseSharePlateModal.addEventListener('click', closeSharePlateModal);
+    if (btnCancelSharePlate) btnCancelSharePlate.addEventListener('click', closeSharePlateModal);
+    if (btnShareSelectAll) {
+      btnShareSelectAll.addEventListener('click', () => {
+        shareUsersListContainer?.querySelectorAll('.share-user-item').forEach(item => {
+          const cb = item.querySelector('.share-user-item-checkbox');
+          if (cb) cb.checked = true;
+          item.classList.add('is-selected');
+        });
+      });
+    }
+    if (btnShareClearAll) {
+      btnShareClearAll.addEventListener('click', () => {
+        shareUsersListContainer?.querySelectorAll('.share-user-item').forEach(item => {
+          const cb = item.querySelector('.share-user-item-checkbox');
+          if (cb) cb.checked = false;
+          item.classList.remove('is-selected');
+        });
+      });
+    }
+    if (btnSaveSharePlate) {
+      btnSaveSharePlate.addEventListener('click', async () => {
+        if (!currentSharePlateId) return;
+        const checkedBoxes = shareUsersListContainer?.querySelectorAll('.share-user-item-checkbox:checked') || [];
+        const selectedUserIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+        if (selectedUserIds.length === 0) {
+          showToast('Selecione pelo menos um usuário para manter o acesso à placa.', true);
+          return;
+        }
+
+        btnSaveSharePlate.disabled = true;
+        const originalText = btnSaveSharePlate.innerHTML;
+        btnSaveSharePlate.innerHTML = 'Salvando...';
+
+        try {
+          const res = await fetchWithAuth(`/api/plates/${currentSharePlateId}/share`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userIds: selectedUserIds, primaryUserId: selectedUserIds[0] })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast(data.message || 'Acessos da placa atualizados com sucesso!');
+            closeSharePlateModal();
+            await fetchPlates();
+            if (state.currentUser?.role === 'admin') fetchUsersList();
+          } else {
+            showToast(data.message || 'Erro ao atualizar acessos da placa.', true);
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Erro de conexão ao salvar acessos.', true);
+        } finally {
+          btnSaveSharePlate.disabled = false;
+          btnSaveSharePlate.innerHTML = originalText;
+        }
+      });
+    }
+
     // Save Plate Form
     plateForm.addEventListener('submit', handleSavePlate);
 
@@ -1137,12 +1207,12 @@ document.addEventListener('DOMContentLoaded', () => {
     formIsActive.checked = true;
     setFormPlateTheme('white');
 
-    // Se admin, permite escolher usuário dono
+    // Se admin, permite escolher usuários com acesso
     if (state.currentUser?.role === 'admin') {
       groupAssignUser.style.display = 'block';
       const defaultOwner = (state.selectedUserFilter && state.selectedUserFilter !== 'all')
-        ? state.selectedUserFilter
-        : state.currentUser.id;
+        ? [state.selectedUserFilter]
+        : [state.currentUser.id];
       populateAssignUsersDropdown(defaultOwner);
     } else {
       groupAssignUser.style.display = 'none';
@@ -1167,7 +1237,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (state.currentUser?.role === 'admin') {
       groupAssignUser.style.display = 'block';
-      populateAssignUsersDropdown(plate.userId || state.currentUser.id);
+      const existingOwners = [plate.userId, ...(plate.sharedWith || [])].filter(Boolean);
+      populateAssignUsersDropdown(existingOwners.length > 0 ? existingOwners : [state.currentUser.id]);
     } else {
       groupAssignUser.style.display = 'none';
     }
@@ -1176,16 +1247,98 @@ document.addEventListener('DOMContentLoaded', () => {
     plateModal.classList.add('is-active');
   }
 
-  function populateAssignUsersDropdown(selectedUserId) {
-    formAssignUser.innerHTML = state.users.map(u => `
-      <option value="${u.id}" ${u.id === selectedUserId ? 'selected' : ''}>
-        ${escapeHtml(u.name)} (${escapeHtml(u.email)}) - ${u.role === 'admin' ? 'Admin' : 'Cliente'}
-      </option>
-    `).join('') || `<option value="${state.currentUser.id}">Você mesmo (${state.currentUser.name})</option>`;
+  function populateAssignUsersDropdown(selectedUserIds) {
+    if (!formAssignUsersContainer) return;
+    const idsSet = new Set(Array.isArray(selectedUserIds) ? selectedUserIds : (selectedUserIds ? [selectedUserIds] : [state.currentUser?.id]));
+
+    if (!state.users || state.users.length === 0) {
+      formAssignUsersContainer.innerHTML = `
+        <label class="multi-user-check-label">
+          <input type="checkbox" value="${state.currentUser?.id}" class="form-assign-user-checkbox" checked>
+          <span>⭐ ${escapeHtml(state.currentUser?.name || 'Administrador')} (${escapeHtml(state.currentUser?.email || '')})</span>
+        </label>
+      `;
+      return;
+    }
+
+    formAssignUsersContainer.innerHTML = state.users.map(u => {
+      const isChecked = idsSet.has(u.id);
+      const roleTag = u.role === 'admin' ? ' ⭐ Admin' : ' 👤 Cliente';
+      return `
+        <label class="multi-user-check-label">
+          <input type="checkbox" value="${u.id}" class="form-assign-user-checkbox" ${isChecked ? 'checked' : ''}>
+          <span><strong>${escapeHtml(u.name)}</strong> (${escapeHtml(u.email)}) - <em style="font-size:0.75rem; color:#94A3B8;">${roleTag}</em></span>
+        </label>
+      `;
+    }).join('');
   }
 
   function closePlateModal() {
     plateModal.classList.remove('is-active');
+  }
+
+  // ==========================================
+  // MODAL HANDLERS: COMPARTILHAR PLACA (MÚLTIPLOS USUÁRIOS)
+  // ==========================================
+  function openSharePlateModal(plateId) {
+    const plate = state.plates.find(p => String(p.id) === String(plateId));
+    if (!plate) return;
+
+    currentSharePlateId = plateId;
+    if (sharePlateModalTitle) {
+      sharePlateModalTitle.innerHTML = `👥 Compartilhar: <strong>${escapeHtml(plate.name)}</strong> ${plate.code ? `<span class="badge-plate-code" style="font-size:0.75rem; background:rgba(6,182,212,0.18); color:#38BDF8; border:1px solid rgba(6,182,212,0.4); padding:2px 7px; border-radius:6px; font-weight:700;">${escapeHtml(plate.code)}</span>` : ''}`;
+    }
+    if (sharePlateModalSubtitle) {
+      sharePlateModalSubtitle.textContent = 'Marque os clientes que poderão visualizar e gerenciar esta placa simultaneamente.';
+    }
+
+    const currentAccessIds = new Set([plate.userId, ...(plate.sharedWith || [])].filter(Boolean));
+
+    if (shareUsersListContainer) {
+      if (!state.users || state.users.length === 0) {
+        shareUsersListContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:12px; text-align:center;">Nenhum usuário cadastrado encontrado.</div>`;
+      } else {
+        shareUsersListContainer.innerHTML = state.users.map(u => {
+          const isChecked = currentAccessIds.has(u.id);
+          const roleBadge = u.role === 'admin'
+            ? `<span class="share-user-item-badge" style="background:rgba(234,179,8,0.15); color:#FACC15; border:1px solid rgba(234,179,8,0.3);">⭐ Admin</span>`
+            : `<span class="share-user-item-badge" style="background:rgba(6,182,212,0.15); color:#38BDF8; border:1px solid rgba(6,182,212,0.3);">👤 Cliente</span>`;
+          return `
+            <div class="share-user-item ${isChecked ? 'is-selected' : ''}" data-user-id="${u.id}">
+              <div class="share-user-item-left">
+                <input type="checkbox" class="share-user-item-checkbox" value="${u.id}" ${isChecked ? 'checked' : ''}>
+                <div class="share-user-item-meta">
+                  <span class="share-user-item-name">${escapeHtml(u.name)}</span>
+                  <span class="share-user-item-email">${escapeHtml(u.email)}</span>
+                </div>
+              </div>
+              <div class="share-user-item-right">
+                ${roleBadge}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Clique no item para alternar checkbox
+        shareUsersListContainer.querySelectorAll('.share-user-item').forEach(item => {
+          item.addEventListener('click', (e) => {
+            const cb = item.querySelector('.share-user-item-checkbox');
+            if (!cb) return;
+            if (e.target !== cb) {
+              cb.checked = !cb.checked;
+            }
+            item.classList.toggle('is-selected', cb.checked);
+          });
+        });
+      }
+    }
+
+    if (sharePlateModal) sharePlateModal.classList.add('is-active');
+  }
+
+  function closeSharePlateModal() {
+    if (sharePlateModal) sharePlateModal.classList.remove('is-active');
+    currentSharePlateId = null;
   }
 
   // ==========================================
@@ -1309,6 +1462,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeRadio = document.querySelector('input[name="formPlateTheme"]:checked');
     const selectedTheme = currentModalPlateTheme || (themeRadio ? themeRadio.value : 'white');
 
+    let selectedAssignedUsers = [];
+    if (state.currentUser?.role === 'admin' && formAssignUsersContainer) {
+      const checkedBoxes = formAssignUsersContainer.querySelectorAll('.form-assign-user-checkbox:checked');
+      selectedAssignedUsers = Array.from(checkedBoxes).map(cb => cb.value);
+      if (selectedAssignedUsers.length === 0) {
+        selectedAssignedUsers = [state.currentUser?.id || 'usr-admin-01'];
+      }
+    }
+
     const payload = {
       name: formName.value.trim(),
       location: formLocation.value.trim(),
@@ -1317,7 +1479,8 @@ document.addEventListener('DOMContentLoaded', () => {
       destinationUrl: formDestination.value.trim(),
       slug: formSlug.value.trim(),
       isActive: formIsActive.checked,
-      assignedUserId: state.currentUser?.role === 'admin' ? formAssignUser.value : undefined
+      assignedUserId: selectedAssignedUsers[0] || state.currentUser?.id,
+      sharedWith: selectedAssignedUsers
     };
 
     try {

@@ -494,11 +494,13 @@ app.get('/api/plates', authenticate, async (req, res) => {
     } else {
       plates = plates.map(p => {
         const owner = users.find(u => u.id === p.userId);
+        const sharedUsers = users.filter(u => Array.isArray(p.sharedWith) && p.sharedWith.includes(u.id));
         return {
           ...p,
           ownerName: owner ? owner.name : 'Administrador',
           ownerEmail: owner ? owner.email : 'wluchesi@gmail.com',
-          ownerWhatsapp: owner ? owner.whatsapp : ''
+          ownerWhatsapp: owner ? owner.whatsapp : '',
+          sharedUsers: sharedUsers.map(u => ({ id: u.id, name: u.name, email: u.email }))
         };
       });
     }
@@ -510,39 +512,59 @@ app.get('/api/plates', authenticate, async (req, res) => {
   }
 });
 
-// Atribuir / Disponibilizar múltiplas placas selecionadas para um cliente (Exclusivo Administrador)
+// Atribuir / Disponibilizar múltiplas placas selecionadas para um ou mais clientes (Exclusivo Administrador)
 app.post('/api/plates/batch-assign', authenticate, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Apenas administradores podem atribuir placas.' });
     }
 
-    const { plateIds, targetUserId } = req.body;
+    const { plateIds, targetUserId, targetUserIds } = req.body;
     if (!Array.isArray(plateIds) || plateIds.length === 0) {
       return res.status(400).json({ success: false, message: 'Nenhuma placa informada.' });
     }
-    if (!targetUserId) {
+
+    let selectedUserIds = [];
+    if (Array.isArray(targetUserIds) && targetUserIds.length > 0) {
+      selectedUserIds = targetUserIds;
+    } else if (targetUserId) {
+      selectedUserIds = [targetUserId];
+    }
+
+    if (selectedUserIds.length === 0) {
       return res.status(400).json({ success: false, message: 'Cliente de destino é obrigatório.' });
     }
 
     const users = await db.getUsers();
-    const targetUser = users.find(u => u.id === targetUserId);
-    if (!targetUser) {
+    const targetUsers = users.filter(u => selectedUserIds.includes(u.id));
+    if (targetUsers.length === 0) {
       return res.status(404).json({ success: false, message: 'Cliente não encontrado.' });
     }
 
+    const allPlates = await db.getPlates();
     const updatedPlates = [];
+
     for (const plateId of plateIds) {
-      const updated = await db.updatePlate(plateId, { userId: targetUserId });
+      const plate = allPlates.find(p => p.id === plateId);
+      if (!plate) continue;
+
+      const currentShared = Array.isArray(plate.sharedWith) ? plate.sharedWith : [];
+      const mergedShared = Array.from(new Set([...currentShared, ...selectedUserIds]));
+
+      const updated = await db.updatePlate(plateId, {
+        sharedWith: mergedShared,
+        userId: plate.userId || selectedUserIds[0]
+      });
       if (updated) {
         updatedPlates.push(updated);
       }
     }
 
+    const names = targetUsers.map(u => u.name).join(', ');
     res.json({
       success: true,
-      message: `${updatedPlates.length} placa(s) agora estão visíveis para ${targetUser.name}!`,
-      targetUserName: targetUser.name,
+      message: `${updatedPlates.length} placa(s) agora estão disponíveis para ${names}!`,
+      targetUserName: names,
       count: updatedPlates.length
     });
   } catch (err) {
@@ -656,7 +678,7 @@ app.get('/api/plates/:id', authenticate, async (req, res) => {
 // Criar nova placa
 app.post('/api/plates', authenticate, async (req, res) => {
   try {
-    const { name, location, destinationUrl, type, slug, assignedUserId, theme = 'white' } = req.body;
+    const { name, location, destinationUrl, type, slug, assignedUserId, theme = 'white', sharedWith } = req.body;
 
     if (!name || !destinationUrl) {
       return res.status(400).json({ success: false, message: 'Nome e URL de destino são obrigatórios.' });
@@ -695,6 +717,7 @@ app.post('/api/plates', authenticate, async (req, res) => {
     }
 
     const plateTheme = theme === 'black' ? 'black' : 'white';
+    const finalSharedWith = Array.isArray(sharedWith) ? sharedWith : (assignedUserId ? [assignedUserId] : []);
 
     const newPlate = {
       id: 'plk-' + Math.random().toString(36).substring(2, 9),
@@ -703,6 +726,7 @@ app.post('/api/plates', authenticate, async (req, res) => {
       code: plateCode,
       name: name.trim(),
       theme: plateTheme,
+      sharedWith: finalSharedWith,
       location: (location || 'Balcão / Entrada').trim(),
       type: type || 'google',
       destinationUrl: destinationUrl.trim(),
@@ -728,7 +752,7 @@ app.post('/api/plates', authenticate, async (req, res) => {
 // Atualizar placa existente
 app.put('/api/plates/:id', authenticate, async (req, res) => {
   try {
-    const { name, location, destinationUrl, type, slug, isActive, assignedUserId, theme } = req.body;
+    const { name, location, destinationUrl, type, slug, isActive, assignedUserId, theme, sharedWith } = req.body;
     const plates = await db.getPlates();
     const existing = plates.find(p => p.id === req.params.id);
 
@@ -768,11 +792,56 @@ app.put('/api/plates/:id', authenticate, async (req, res) => {
       updatePayload.theme = theme;
     }
 
+    if (Array.isArray(sharedWith)) {
+      updatePayload.sharedWith = sharedWith;
+    }
+
     const updated = await db.updatePlate(existing.id, updatePayload);
     res.json({ success: true, plate: updated });
   } catch (err) {
     console.error('Erro update plate:', err);
     res.status(500).json({ success: false, message: 'Erro ao atualizar placa' });
+  }
+});
+
+// Compartilhar / Disponibilizar placa para múltiplos usuários (Admin only)
+app.post('/api/plates/:id/share', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Apenas administradores podem gerenciar acessos.' });
+    }
+
+    const { userIds, primaryUserId } = req.body;
+    if (!Array.isArray(userIds)) {
+      return res.status(400).json({ success: false, message: 'A lista de usuários deve ser um array.' });
+    }
+
+    const plates = await db.getPlates();
+    const plate = plates.find(p => p.id === req.params.id);
+    if (!plate) return res.status(404).json({ success: false, message: 'Placa não encontrada.' });
+
+    const updateFields = {
+      sharedWith: userIds
+    };
+    if (primaryUserId) {
+      updateFields.userId = primaryUserId;
+    }
+
+    const updated = await db.updatePlate(plate.id, updateFields);
+    const users = await db.getUsers();
+    const activeUsers = users.filter(u => userIds.includes(u.id));
+    const names = activeUsers.map(u => u.name);
+
+    res.json({
+      success: true,
+      message: `Acessos atualizados! Placa disponível para: ${names.length > 0 ? names.join(', ') : 'apenas o administrador'}.`,
+      plate: updated,
+      sharedWith: userIds,
+      sharedUsers: activeUsers.map(u => ({ id: u.id, name: u.name, email: u.email }))
+    });
+  } catch (err) {
+    console.error('Erro /api/plates/:id/share:', err);
+    res.status(500).json({ success: false, message: 'Erro ao atualizar acessos da placa.' });
   }
 });
 

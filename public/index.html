@@ -509,12 +509,16 @@
           <small class="form-help">Este é o link permanente que será gravado no NFC e no QR Code físico.</small>
         </div>
 
-        <!-- Admin only: Assign user -->
+        <!-- Admin only: Multi-user Assign -->
         <div class="form-group" id="groupAssignUser" style="display:none;">
-          <label for="formAssignUser">Vincular a Usuário / Cliente (Exclusivo Administrador)</label>
-          <select id="formAssignUser">
-            <!-- Populated dynamically via JS -->
-          </select>
+          <label style="margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+            <span>👥 Disponibilizar para Usuários / Clientes</span>
+            <span style="font-size: 0.72rem; color: #38BDF8; font-weight: normal;">(Selecione múltiplos simultaneamente)</span>
+          </label>
+          <div id="formAssignUsersContainer" class="multi-user-checkbox-list">
+            <!-- Populado dinamicamente com checkboxes para cada usuário -->
+          </div>
+          <small class="form-help">Todos os usuários marcados poderão visualizar e utilizar esta placa simultaneamente.</small>
         </div>
 
         <div class="form-checkbox">
@@ -989,6 +993,39 @@
           <button type="submit" class="btn-primary" id="btnSaveNewPassword">Salvar Nova Senha</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Compartilhar Placa com Múltiplos Usuários -->
+  <div class="modal-overlay" id="sharePlateModal" aria-hidden="true">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 class="modal-title" id="sharePlateModalTitle">👥 Compartilhar Acesso à Placa</h3>
+          <p class="modal-subtitle" id="sharePlateModalSubtitle">Selecione todos os usuários e clientes que devem visualizar esta placa simultaneamente</p>
+        </div>
+        <button class="btn-close" id="btnCloseSharePlateModal">&times;</button>
+      </div>
+
+      <div class="share-modal-body" style="padding: 16px 0;">
+        <div class="share-actions-quick-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px;">
+          <span style="font-size: 0.82rem; color: #94A3B8;">Usuários cadastrados no sistema:</span>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-link-action" id="btnShareSelectAll" style="background: none; border: none; color: #38BDF8; font-size: 0.78rem; font-weight: 700; cursor: pointer;">Marcar Todos</button>
+            <span style="color: #475569;">•</span>
+            <button type="button" class="btn-link-action" id="btnShareClearAll" style="background: none; border: none; color: #94A3B8; font-size: 0.78rem; font-weight: 600; cursor: pointer;">Desmarcar</button>
+          </div>
+        </div>
+
+        <div class="share-users-list" id="shareUsersListContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; padding-right: 4px;">
+          <!-- Populado dinamicamente via JS com cada usuário e seu checkbox -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="margin-top: 10px;">
+        <button type="button" class="btn-secondary" id="btnCancelSharePlate">Cancelar</button>
+        <button type="button" class="btn-primary" id="btnSaveSharePlate">Salvar Acessos</button>
+      </div>
     </div>
   </div>
 
