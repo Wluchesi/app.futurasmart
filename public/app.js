@@ -28,6 +28,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const userRoleBadge = document.getElementById('userRoleBadge');
   const btnLogout = document.getElementById('btnLogout');
 
+  // DOM Elements - Main View Navigation Tabs
+  const navTabDashboard = document.getElementById('navTabDashboard');
+  const navTabPlates = document.getElementById('navTabPlates');
+  const viewDashboard = document.getElementById('viewDashboard');
+  const viewPlatesManager = document.getElementById('viewPlatesManager');
+  const navPlatesCountBadge = document.getElementById('navPlatesCountBadge');
+  const btnQuickNewPlate = document.getElementById('btnQuickNewPlate');
+  const btnGoToPlatesManager = document.getElementById('btnGoToPlatesManager');
+
   // DOM Elements - Metrics
   const valTotalPlates = document.getElementById('valTotalPlates');
   const valActivePlates = document.getElementById('valActivePlates');
@@ -350,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.success) {
         state.plates = data.plates;
         renderPlates();
+        renderDashboardCharts();
         if (state.currentUser?.role === 'admin') {
           updateUserFilterUI();
         }
@@ -389,6 +399,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     qrProgressBar.style.width = `${qrPct}%`;
     qrRatioText.textContent = `${qrPct}% do total`;
+
+    renderDashboardCharts();
   }
 
   // ==========================================
@@ -420,6 +432,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     platesCount.textContent = filtered.length;
+    if (navPlatesCountBadge) {
+      navPlatesCountBadge.textContent = state.plates.length;
+    }
 
     if (filtered.length === 0) {
       if (state.selectedUserFilter && state.selectedUserFilter !== 'all') {
@@ -2097,6 +2112,271 @@ document.addEventListener('DOMContentLoaded', () => {
     toastTimer = setTimeout(() => {
       toastNotification.classList.remove('is-active');
     }, 3500);
+  }
+
+  // ==========================================
+  // NAVEGAÇÃO ENTRE ABAS (PAINEL GERAL vs GERENCIADOR)
+  // ==========================================
+  function switchView(viewName) {
+    if (viewName === 'dashboard') {
+      if (navTabDashboard) navTabDashboard.classList.add('active');
+      if (navTabPlates) navTabPlates.classList.remove('active');
+      if (viewDashboard) viewDashboard.style.display = 'block';
+      if (viewPlatesManager) viewPlatesManager.style.display = 'none';
+
+      // Ajusta renderização dos gráficos
+      setTimeout(() => {
+        if (salesGrowthChartInstance) salesGrowthChartInstance.resize();
+        if (channelsDoughnutChartInstance) channelsDoughnutChartInstance.resize();
+      }, 50);
+    } else {
+      if (navTabPlates) navTabPlates.classList.add('active');
+      if (navTabDashboard) navTabDashboard.classList.remove('active');
+      if (viewDashboard) viewDashboard.style.display = 'none';
+      if (viewPlatesManager) viewPlatesManager.style.display = 'block';
+    }
+  }
+
+  if (navTabDashboard) {
+    navTabDashboard.addEventListener('click', () => switchView('dashboard'));
+  }
+  if (navTabPlates) {
+    navTabPlates.addEventListener('click', () => switchView('plates'));
+  }
+  if (btnGoToPlatesManager) {
+    btnGoToPlatesManager.addEventListener('click', () => switchView('plates'));
+  }
+  if (btnQuickNewPlate) {
+    btnQuickNewPlate.addEventListener('click', () => openNewPlateModal());
+  }
+
+  // ==========================================
+  // GRÁFICOS ANALÍTICOS (CHART.JS)
+  // ==========================================
+  let salesGrowthChartInstance = null;
+  let channelsDoughnutChartInstance = null;
+
+  function renderDashboardCharts() {
+    if (typeof Chart === 'undefined') return;
+
+    renderSalesGrowthChart();
+    renderChannelsDoughnutChart();
+  }
+
+  function renderSalesGrowthChart() {
+    const canvas = document.getElementById('salesGrowthChart');
+    if (!canvas) return;
+
+    const chartTotalPlatesMetric = document.getElementById('chartTotalPlatesMetric');
+    const chartActivePlatesMetric = document.getElementById('chartActivePlatesMetric');
+    const chartTotalScansMetric = document.getElementById('chartTotalScansMetric');
+
+    const totalPlates = state.plates.length;
+    const activePlates = state.plates.filter(p => p.isActive).length;
+    let totalScans = 0;
+    state.plates.forEach(p => { totalScans += (p.scans?.total || 0); });
+
+    if (chartTotalPlatesMetric) chartTotalPlatesMetric.textContent = totalPlates;
+    if (chartActivePlatesMetric) chartActivePlatesMetric.textContent = activePlates;
+    if (chartTotalScansMetric) chartTotalScansMetric.textContent = totalScans.toLocaleString('pt-BR');
+
+    // Monta série dos últimos 6 meses
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const now = new Date();
+    const months = [];
+    const monthlySalesCount = [];
+    const cumulativeCounts = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const monthIdx = d.getMonth();
+      const label = `${monthNames[monthIdx]}/${String(year).slice(2)}`;
+      months.push({ label, year, month: monthIdx, count: 0 });
+    }
+
+    state.plates.forEach(p => {
+      if (!p.createdAt) return;
+      const d = new Date(p.createdAt);
+      const pYear = d.getFullYear();
+      const pMonth = d.getMonth();
+      const target = months.find(m => m.year === pYear && m.month === pMonth);
+      if (target) {
+        target.count++;
+      } else {
+        if (months[0]) months[0].count++;
+      }
+    });
+
+    let runningTotal = 0;
+    months.forEach(m => {
+      monthlySalesCount.push(m.count);
+      runningTotal += m.count;
+      cumulativeCounts.push(runningTotal);
+    });
+
+    if (cumulativeCounts[cumulativeCounts.length - 1] < totalPlates) {
+      cumulativeCounts[cumulativeCounts.length - 1] = totalPlates;
+    }
+
+    const labels = months.map(m => m.label);
+
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+    gradient.addColorStop(0, 'rgba(6, 182, 212, 0.45)');
+    gradient.addColorStop(0.6, 'rgba(37, 99, 235, 0.15)');
+    gradient.addColorStop(1, 'rgba(15, 23, 42, 0)');
+
+    if (salesGrowthChartInstance) {
+      salesGrowthChartInstance.destroy();
+    }
+
+    salesGrowthChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Total Acumulado de Placas',
+            data: cumulativeCounts,
+            borderColor: '#38BDF8',
+            borderWidth: 3,
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.38,
+            pointBackgroundColor: '#FFFFFF',
+            pointBorderColor: '#0284C7',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 7
+          },
+          {
+            label: 'Novas Placas Cadastradas no Mês',
+            data: monthlySalesCount,
+            borderColor: '#818CF8',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            backgroundColor: 'transparent',
+            tension: 0.3,
+            pointBackgroundColor: '#818CF8',
+            pointRadius: 3,
+            pointHoverRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            align: 'end',
+            labels: {
+              color: '#94A3B8',
+              font: { family: "'Plus Jakarta Sans', sans-serif", size: 12, weight: '600' },
+              boxWidth: 12,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleColor: '#FFFFFF',
+            bodyColor: '#38BDF8',
+            borderColor: 'rgba(56, 189, 248, 0.3)',
+            borderWidth: 1,
+            padding: 12,
+            boxPadding: 6,
+            cornerRadius: 8,
+            callbacks: {
+              label: function(context) {
+                return ` ${context.dataset.label}: ${context.parsed.y} placas`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#94A3B8', font: { family: "'Plus Jakarta Sans', sans-serif", size: 11 } }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: {
+              color: '#94A3B8',
+              font: { family: "'Plus Jakarta Sans', sans-serif", size: 11 },
+              precision: 0
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderChannelsDoughnutChart() {
+    const canvas = document.getElementById('channelsDoughnutChart');
+    if (!canvas) return;
+
+    let totalNFC = 0;
+    let totalQR = 0;
+    state.plates.forEach(p => {
+      totalNFC += (p.scans?.nfc || 0);
+      totalQR += (p.scans?.qr || 0);
+    });
+
+    const totalScans = totalNFC + totalQR;
+    const nfcPct = totalScans > 0 ? Math.round((totalNFC / totalScans) * 100) : 50;
+    const qrPct = totalScans > 0 ? Math.round((totalQR / totalScans) * 100) : 50;
+
+    const legendNfc = document.getElementById('legendNfcPercent');
+    const legendQr = document.getElementById('legendQrPercent');
+    if (legendNfc) legendNfc.textContent = `${nfcPct}% (${totalNFC.toLocaleString('pt-BR')})`;
+    if (legendQr) legendQr.textContent = `${qrPct}% (${totalQR.toLocaleString('pt-BR')})`;
+
+    const displayData = totalScans > 0 ? [totalNFC, totalQR] : [1, 1];
+
+    const ctx = canvas.getContext('2d');
+    if (channelsDoughnutChartInstance) {
+      channelsDoughnutChartInstance.destroy();
+    }
+
+    channelsDoughnutChartInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Aproximação NFC', 'Câmera QR Code'],
+        datasets: [{
+          data: displayData,
+          backgroundColor: ['#10B981', '#F59E0B'],
+          borderColor: '#0B0F17',
+          borderWidth: 4,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleColor: '#FFFFFF',
+            bodyColor: '#F8FAFC',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1,
+            padding: 10,
+            cornerRadius: 8,
+            callbacks: {
+              label: function(context) {
+                const val = totalScans > 0 ? context.parsed : 0;
+                return ` ${context.label}: ${val.toLocaleString('pt-BR')} acessos`;
+              }
+            }
+          }
+        }
+      }
+    });
   }
 
   function escapeHtml(str) {
