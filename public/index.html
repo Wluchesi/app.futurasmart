@@ -72,6 +72,13 @@
           Nova Placa
         </button>
 
+        <button id="btnOpenBatchModal" class="btn-primary" style="background: linear-gradient(135deg, #06B6D4, #0284C7); border-color: rgba(6, 182, 212, 0.4);" title="Criar um lote inteiro de placas sequenciais (PI-102...)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          Criar Lote
+        </button>
+
         <button id="btnOpenPrintStudio" class="btn-secondary" style="border-color: rgba(6, 182, 212, 0.45); color: #38BDF8;" title="Estúdio de Criação de Placas (10x15cm) & Impressão A4 para Gráfica">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 6 2 18 2 18 9"></polyline>
@@ -128,6 +135,10 @@
       </div>
 
       <div class="nav-tabs-actions">
+        <button type="button" id="btnQuickBatchModal" class="btn-primary btn-sm-nav" style="background: linear-gradient(135deg, #06B6D4, #0284C7);" title="Criar lote de placas sequenciais">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          Criar Lote
+        </button>
         <button type="button" id="btnQuickNewPlate" class="btn-primary btn-sm-nav" title="Cadastrar nova placa">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -493,6 +504,76 @@
         <div class="modal-footer">
           <button type="button" class="btn-secondary" id="btnCancelPlate">Cancelar</button>
           <button type="submit" class="btn-primary" id="btnSavePlate">Salvar Placa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Criar Lote de Placas Sequenciais -->
+  <div class="modal-overlay" id="batchCreateModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 class="modal-title">⚡ Criar Lote de Placas Sequenciais</h3>
+          <p class="modal-subtitle">Gere dezenas de plaquinhas sequenciais de uma só vez (iniciando em PI-102)</p>
+        </div>
+        <button class="btn-close" id="btnCloseBatchCreateModal">&times;</button>
+      </div>
+
+      <form id="batchCreateForm">
+        <div class="form-row" style="display: flex; gap: 12px;">
+          <div class="form-group" style="flex: 1;">
+            <label for="batchStartCode">Código Inicial *</label>
+            <input type="text" id="batchStartCode" value="PI-102" required style="font-weight: 700; color: #38BDF8;">
+            <small class="form-help">Primeira placa do lote.</small>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label for="batchCount">Quantidade de Placas *</label>
+            <input type="number" id="batchCount" min="1" max="100" value="10" required>
+            <small class="form-help">Total a ser gerado.</small>
+          </div>
+        </div>
+
+        <div class="batch-preview-box" id="batchCodeRangePreview" style="background: rgba(6, 182, 212, 0.1); border: 1px dashed rgba(6, 182, 212, 0.4); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.85rem; color: #E2E8F0;">
+          ⚡ Sequência: <strong id="batchPreviewRange" style="color: #38BDF8;">PI-102 até PI-111 (10 placas)</strong>
+        </div>
+
+        <div class="form-group">
+          <label for="batchDestinationUrl">Link de Destino Padrão (URL) *</label>
+          <input type="url" id="batchDestinationUrl" value="https://search.google.com/local/writereview" required placeholder="https://search.google.com/local/writereview">
+          <small class="form-help">Poderá ser alterado individualmente para cada cliente a qualquer momento.</small>
+        </div>
+
+        <div class="form-row" style="display: flex; gap: 12px;">
+          <div class="form-group" style="flex: 1;">
+            <label for="batchPlateType">Tipo de Placa</label>
+            <select id="batchPlateType">
+              <option value="google">⭐ Google Avaliações</option>
+              <option value="instagram">📸 Instagram</option>
+              <option value="whatsapp">💬 WhatsApp</option>
+              <option value="menu">🍽️ Cardápio Digital</option>
+              <option value="custom">🔗 Link Personalizado</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="flex: 1;" id="groupBatchAssignUser">
+            <label for="batchModalAssignUser">Disponibilizar para</label>
+            <select id="batchModalAssignUser">
+              <!-- Populado dinamicamente com clientes -->
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="batchLocation">Local / Setor Padrão</label>
+          <input type="text" id="batchLocation" value="Balcão" placeholder="Ex: Balcão / Entrada / Mesas">
+        </div>
+
+        <div class="modal-footer" style="margin-top: 18px;">
+          <button type="button" class="btn-secondary" id="btnCancelBatchCreate">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSubmitBatchCreate" style="background: linear-gradient(135deg, #06B6D4, #0284C7);">
+            ⚡ Gerar Lote Agora
+          </button>
         </div>
       </form>
     </div>
@@ -878,7 +959,7 @@
             <span class="studio-sparkle">🖨️</span>
             <h3 class="modal-title">Estúdio Gráfico & Impressão A4 (10x15 cm)</h3>
           </div>
-          <p class="modal-subtitle">Gere artes vetorizadas em 300 DPI prontas para gráfica nos modelos Branco ou Preto com sequência infinita de códigos únicos (PI-121...).</p>
+          <p class="modal-subtitle">Gere artes vetorizadas em 300 DPI prontas para gráfica nos modelos Branco ou Preto com sequência infinita de códigos únicos (PI-102...).</p>
         </div>
         <button class="btn-close" id="btnClosePrintStudio">&times;</button>
       </div>
@@ -891,7 +972,7 @@
             <label class="studio-group-label">Origem das Placas</label>
             <div class="studio-segmented-pill">
               <button type="button" class="studio-seg-btn active" id="tabModeExisting">📋 Placas Já Cadastradas</button>
-              <button type="button" class="studio-seg-btn" id="tabModeBatch">✨ Gerar Novo Lote (PI-121...)</button>
+              <button type="button" class="studio-seg-btn" id="tabModeBatch">✨ Gerar Novo Lote (PI-102...)</button>
             </div>
           </div>
 
@@ -920,7 +1001,7 @@
                   <span>Próximo Código Livre:</span>
                   <span class="badge-auto-code">⚡ Sequência Automática</span>
                 </div>
-                <div class="callout-code-val" id="studioNextCodeDisplay">PI-121</div>
+                <div class="callout-code-val" id="studioNextCodeDisplay">PI-102</div>
                 <div class="callout-code-hint">Garantia: códigos únicos infinitos, nenhuma placa jamais repetirá o número.</div>
               </div>
             </div>
@@ -936,6 +1017,11 @@
                 <!-- Populado dinamicamente -->
               </select>
             </div>
+
+            <button type="button" class="btn-primary" id="btnStudioCreateBatchNow" style="width: 100%; margin-top: 10px; background: linear-gradient(135deg, #06B6D4, #0284C7); display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              Cadastrar este Lote no Sistema Agora
+            </button>
           </div>
 
           <!-- Modelo Visual da Arte (Branco vs Preto) -->

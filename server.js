@@ -551,7 +551,7 @@ app.post('/api/plates/batch-assign', authenticate, async (req, res) => {
   }
 });
 
-// Obter próximo código sequencial de placa (iniciando em PI-121)
+// Obter próximo código sequencial de placa (iniciando em PI-102)
 app.get('/api/plates/next-code', authenticate, async (req, res) => {
   try {
     const nextCode = await db.getNextPlateCode();
@@ -562,20 +562,34 @@ app.get('/api/plates/next-code', authenticate, async (req, res) => {
   }
 });
 
-// Gerar lote de placas sequenciais para impressão gráfica
+// Gerar lote de placas sequenciais para o sistema e impressão gráfica
 app.post('/api/plates/batch-generate', authenticate, async (req, res) => {
   try {
-    const { count = 1, destinationUrl, type = 'google', assignedUserId, location = 'Balcão' } = req.body;
+    const { count = 1, destinationUrl, type = 'google', assignedUserId, location = 'Balcão', startCode } = req.body;
     const userId = (req.user.role === 'admin' && assignedUserId) ? assignedUserId : req.user.id;
-    const url = destinationUrl ? destinationUrl.trim() : 'https://google.com';
+    const url = destinationUrl ? destinationUrl.trim() : 'https://search.google.com/local/writereview';
 
     const created = [];
-    const requestedCount = Math.min(Math.max(parseInt(count, 10) || 1, 1), 100);
+    const requestedCount = Math.min(Math.max(parseInt(count, 10) || 1, 1), 200);
+
+    let startNum = null;
+    if (startCode && typeof startCode === 'string') {
+      const match = startCode.match(/PI-(\d+)/i);
+      if (match) {
+        startNum = parseInt(match[1], 10);
+      }
+    }
+
+    if (startNum === null) {
+      const autoNext = await db.getNextPlateCode();
+      const match = autoNext.match(/PI-(\d+)/i);
+      startNum = match ? parseInt(match[1], 10) : 102;
+    }
 
     for (let i = 0; i < requestedCount; i++) {
-      const code = await db.getNextPlateCode();
-      const num = code.replace('PI-', '');
-      const slug = `pi-${num.toLowerCase()}`;
+      const currentNum = startNum + i;
+      const code = `PI-${currentNum}`;
+      const slug = `pi-${currentNum}`;
 
       const newPlate = {
         id: 'plk-' + Math.random().toString(36).substring(2, 9),
@@ -583,23 +597,34 @@ app.post('/api/plates/batch-generate', authenticate, async (req, res) => {
         slug: slug,
         name: `Placa Inteligente ${code}`,
         code: code,
-        location: location,
-        type: type,
+        location: location || 'Balcão',
+        type: type || 'google',
         destinationUrl: url,
         isActive: true,
-        notes: `Gerada no Estúdio Gráfico [${code}]`,
+        notes: `Gerada em Lote [${code}]`,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        scans: {
+          total: 0,
+          nfc: 0,
+          qr: 0
+        }
       };
 
       const saved = await db.createPlate(newPlate);
       created.push(saved);
     }
 
+    const firstCode = created[0]?.code || 'PI-102';
+    const lastCode = created[created.length - 1]?.code || firstCode;
+
     res.status(201).json({
       success: true,
-      message: `${created.length} placa(s) gerada(s) com sucesso na sequência!`,
-      plates: created
+      message: `${created.length} placa(s) gerada(s) com sucesso no lote (${firstCode} até ${lastCode})!`,
+      plates: created,
+      firstCode,
+      lastCode,
+      count: created.length
     });
   } catch (err) {
     console.error('Erro batch-generate:', err);
@@ -663,7 +688,7 @@ app.post('/api/plates', authenticate, async (req, res) => {
       try {
         plateCode = await db.getNextPlateCode();
       } catch (e) {
-        plateCode = 'PI-121';
+        plateCode = 'PI-102';
       }
     }
 

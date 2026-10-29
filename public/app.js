@@ -97,6 +97,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnBatchSelectAll = document.getElementById('btnBatchSelectAll');
   const btnBatchClearSelection = document.getElementById('btnBatchClearSelection');
 
+  // DOM Elements - Batch Create Modal (Lote Inteiro)
+  const btnOpenBatchModal = document.getElementById('btnOpenBatchModal');
+  const btnQuickBatchModal = document.getElementById('btnQuickBatchModal');
+  const batchCreateModal = document.getElementById('batchCreateModal');
+  const btnCloseBatchCreateModal = document.getElementById('btnCloseBatchCreateModal');
+  const btnCancelBatchCreate = document.getElementById('btnCancelBatchCreate');
+  const batchCreateForm = document.getElementById('batchCreateForm');
+  const batchStartCode = document.getElementById('batchStartCode');
+  const batchCount = document.getElementById('batchCount');
+  const batchPreviewRange = document.getElementById('batchPreviewRange');
+  const batchDestinationUrl = document.getElementById('batchDestinationUrl');
+  const batchPlateType = document.getElementById('batchPlateType');
+  const batchModalAssignUser = document.getElementById('batchModalAssignUser');
+  const groupBatchAssignUser = document.getElementById('groupBatchAssignUser');
+  const btnSubmitBatchCreate = document.getElementById('btnSubmitBatchCreate');
+  const btnStudioCreateBatchNow = document.getElementById('btnStudioCreateBatchNow');
+
   let selectedPlateIds = new Set();
 
   // Modals
@@ -862,6 +879,29 @@ document.addEventListener('DOMContentLoaded', () => {
       openNewPlateModal();
     });
 
+    // Abrir Modal de Criação de Lote
+    if (btnOpenBatchModal) {
+      btnOpenBatchModal.addEventListener('click', openBatchCreateModal);
+    }
+    if (btnQuickBatchModal) {
+      btnQuickBatchModal.addEventListener('click', openBatchCreateModal);
+    }
+    if (btnCloseBatchCreateModal) {
+      btnCloseBatchCreateModal.addEventListener('click', closeBatchCreateModal);
+    }
+    if (btnCancelBatchCreate) {
+      btnCancelBatchCreate.addEventListener('click', closeBatchCreateModal);
+    }
+    if (batchCreateForm) {
+      batchCreateForm.addEventListener('submit', handleBatchCreateSubmit);
+    }
+    if (batchStartCode) {
+      batchStartCode.addEventListener('input', updateBatchPreviewRange);
+    }
+    if (batchCount) {
+      batchCount.addEventListener('input', updateBatchPreviewRange);
+    }
+
     btnClosePlateModal.addEventListener('click', closePlateModal);
     btnCancelPlate.addEventListener('click', closePlateModal);
 
@@ -1024,6 +1064,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function closePlateModal() {
     plateModal.classList.remove('is-active');
+  }
+
+  // ==========================================
+  // MODAL HANDLERS: CRIAR LOTE DE PLACAS SEQUENCIAIS (PI-102...)
+  // ==========================================
+  function updateBatchPreviewRange() {
+    if (!batchPreviewRange || !batchStartCode || !batchCount) return;
+    const startStr = batchStartCode.value.trim().toUpperCase();
+    const match = startStr.match(/PI-(\d+)/i);
+    const startNum = match ? parseInt(match[1], 10) : 102;
+    const count = Math.max(parseInt(batchCount.value, 10) || 1, 1);
+    const endNum = startNum + count - 1;
+    batchPreviewRange.textContent = `PI-${startNum} até PI-${endNum} (${count} placas)`;
+  }
+
+  async function openBatchCreateModal() {
+    await fetchNextPlateCode();
+    if (batchStartCode) {
+      batchStartCode.value = studioState.nextCode || 'PI-102';
+    }
+    if (batchCount) {
+      batchCount.value = 10;
+    }
+    updateBatchPreviewRange();
+
+    // Popula usuários no select do lote
+    if (batchModalAssignUser) {
+      batchModalAssignUser.innerHTML = state.users.map(u => `
+        <option value="${u.id}" ${u.id === state.currentUser?.id ? 'selected' : ''}>
+          ${u.role === 'admin' ? '⭐' : '👤'} ${escapeHtml(u.name)} (${escapeHtml(u.email)})
+        </option>
+      `).join('') || `<option value="${state.currentUser?.id}">Você mesmo</option>`;
+    }
+
+    if (batchCreateModal) {
+      batchCreateModal.classList.add('is-active');
+    }
+  }
+
+  function closeBatchCreateModal() {
+    if (batchCreateModal) {
+      batchCreateModal.classList.remove('is-active');
+    }
+  }
+
+  async function handleBatchCreateSubmit(e) {
+    e.preventDefault();
+    const count = parseInt(batchCount.value, 10) || 1;
+    const startCode = batchStartCode.value.trim().toUpperCase() || 'PI-102';
+    const destinationUrl = batchDestinationUrl.value.trim() || 'https://search.google.com/local/writereview';
+    const type = batchPlateType.value || 'google';
+    const assignedUserId = batchModalAssignUser ? batchModalAssignUser.value : undefined;
+    const location = document.getElementById('batchLocation')?.value?.trim() || 'Balcão';
+
+    btnSubmitBatchCreate.disabled = true;
+    const originalText = btnSubmitBatchCreate.innerHTML;
+    btnSubmitBatchCreate.innerHTML = 'Gerando Lote...';
+
+    try {
+      const res = await fetchWithAuth('/api/plates/batch-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          count,
+          startCode,
+          destinationUrl,
+          type,
+          assignedUserId,
+          location
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message || `Lote de ${count} placas gerado com sucesso!`);
+        closeBatchCreateModal();
+        await fetchPlates();
+        await fetchAnalytics();
+        await fetchNextPlateCode();
+        if (state.currentUser?.role === 'admin') fetchUsersList();
+      } else {
+        showToast(data.message || 'Erro ao gerar lote de placas.', true);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro de conexão ao gerar lote de placas.', true);
+    } finally {
+      btnSubmitBatchCreate.disabled = false;
+      btnSubmitBatchCreate.innerHTML = originalText;
+    }
   }
 
   async function handleSavePlate(e) {
@@ -1562,7 +1692,7 @@ document.addEventListener('DOMContentLoaded', () => {
     layout: 6, // mantido para compatibilidade
     theme: 'white', // 'white' ou 'black' (sem dourado ou azul)
     showCropMarks: true,
-    nextCode: 'PI-121',
+    nextCode: 'PI-102',
     zoom: 0.6,
     selectedPlateId: null,
     slotPlateIds: [], // Array de IDs de placas para cada posição
@@ -1789,6 +1919,64 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
       });
     }
+
+    // Botão Cadastrar Lote no Sistema Agora (dentro do Estúdio A4)
+    if (btnStudioCreateBatchNow) {
+      btnStudioCreateBatchNow.addEventListener('click', async () => {
+        const count = getEffectivePlateCount();
+        const destinationUrl = studioBatchDestination?.value?.trim() || 'https://search.google.com/local/writereview';
+        const assignedUserId = studioAssignUser?.value;
+        const startCode = studioState.nextCode || 'PI-102';
+
+        btnStudioCreateBatchNow.disabled = true;
+        const originalText = btnStudioCreateBatchNow.innerHTML;
+        btnStudioCreateBatchNow.innerHTML = 'Cadastrando Lote...';
+
+        try {
+          const res = await fetchWithAuth('/api/plates/batch-generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              count,
+              startCode,
+              destinationUrl,
+              assignedUserId,
+              type: 'google'
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast(data.message || `Lote de ${count} placas gerado com sucesso!`);
+            await fetchPlates();
+            await fetchAnalytics();
+            await fetchNextPlateCode();
+            // Altera para modo de placas cadastradas e já coloca as novas no estúdio
+            studioState.mode = 'existing';
+            if (tabModeExisting && tabModeBatch) {
+              tabModeExisting.classList.add('active');
+              tabModeBatch.classList.remove('active');
+              sectionBatchConfig.style.display = 'none';
+              sectionExistingConfig.style.display = 'block';
+            }
+            if (data.plates && data.plates.length > 0) {
+              for (let i = 0; i < count; i++) {
+                studioState.slotPlateIds[i] = data.plates[i % data.plates.length].id;
+              }
+            }
+            renderSlotSelectors();
+            renderStudioSheet();
+          } else {
+            showToast(data.message || 'Erro ao cadastrar lote.', true);
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Erro de conexão ao gerar lote.', true);
+        } finally {
+          btnStudioCreateBatchNow.disabled = false;
+          btnStudioCreateBatchNow.innerHTML = originalText;
+        }
+      });
+    }
   }
 
   async function fetchNextPlateCode() {
@@ -2006,18 +2194,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Gera o HTML da Arte Vetorial 10x15 cm de alta resolução
   function renderPlateCardHtml(plateOrData, theme, showCropMarks) {
-    let plateCode = 'PI-121';
+    let plateCode = 'PI-102';
     let plateSlug = 'placa';
     let plateName = '';
     let plateType = 'google';
 
     if (typeof plateOrData === 'object' && plateOrData !== null) {
-      plateCode = plateOrData.code || 'PI-121';
+      plateCode = plateOrData.code || 'PI-102';
       plateSlug = plateOrData.slug || 'placa';
       plateName = plateOrData.name || '';
       plateType = plateOrData.type || 'google';
     } else {
-      plateCode = arguments[0] || 'PI-121';
+      plateCode = arguments[0] || 'PI-102';
       plateSlug = arguments[1] || 'placa';
       theme = arguments[2] || theme;
       showCropMarks = arguments[3] !== undefined ? arguments[3] : showCropMarks;
@@ -2222,7 +2410,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (studioState.mode === 'batch') {
       const baseNumStr = studioState.nextCode.replace('PI-', '');
       let baseNum = parseInt(baseNumStr, 10);
-      if (isNaN(baseNum)) baseNum = 121;
+      if (isNaN(baseNum)) baseNum = 102;
 
       for (let i = 0; i < count; i++) {
         const currentCode = `PI-${baseNum + i}`;
