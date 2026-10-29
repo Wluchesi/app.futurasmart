@@ -797,6 +797,34 @@ app.patch('/api/plates/:id/toggle', authenticate, async (req, res) => {
   }
 });
 
+// Alterar cor da placa diretamente (1 clique pelo card: Clean Branco vs Black Premium)
+app.patch('/api/plates/:id/theme', authenticate, async (req, res) => {
+  try {
+    const { theme } = req.body;
+    if (theme !== 'white' && theme !== 'black') {
+      return res.status(400).json({ success: false, message: 'Cor inválida. Use white ou black.' });
+    }
+    const plates = await db.getPlates();
+    const plate = plates.find(p => p.id === req.params.id);
+    if (!plate) return res.status(404).json({ success: false, message: 'Placa não encontrada.' });
+
+    if (req.user.role !== 'admin' && plate.userId !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Acesso negado.' });
+    }
+
+    const updated = await db.updatePlate(plate.id, { theme });
+    res.json({
+      success: true,
+      message: `Cor da placa alterada para ${theme === 'black' ? 'Black Premium ⚫' : 'Clean Branco ⚪'}!`,
+      theme,
+      plate: updated || { ...plate, theme }
+    });
+  } catch (err) {
+    console.error('Erro update plate theme:', err);
+    res.status(500).json({ success: false, message: 'Erro ao alterar cor da placa' });
+  }
+});
+
 // Excluir placa
 app.delete('/api/plates/:id', authenticate, async (req, res) => {
   try {

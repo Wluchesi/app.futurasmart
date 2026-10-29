@@ -1,6 +1,26 @@
 {
   "plates": [
     {
+      "id": "plk-h8dmfgl",
+      "userId": "usr-admin-01",
+      "slug": "pi-102",
+      "name": "Placa Inteligente PI-102",
+      "code": "PI-102",
+      "theme": "black",
+      "location": "Balcão",
+      "type": "google",
+      "destinationUrl": "https://www.google.com/",
+      "isActive": true,
+      "notes": "Gerada em Lote [PI-102] [THEME:black]",
+      "createdAt": "2026-10-29T16:57:00.916+00:00",
+      "updatedAt": "2026-10-29T17:31:05.989Z",
+      "scans": {
+        "total": 0,
+        "nfc": 0,
+        "qr": 0
+      }
+    },
+    {
       "id": "plk-pv2y3m4",
       "userId": "usr-gq1mkik",
       "slug": "barbearia-don-ruan",

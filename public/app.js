@@ -567,7 +567,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="plate-name">
                   ${escapeHtml(plate.name)}
                   ${plate.code ? `<span class="badge-plate-code" style="margin-left:6px; font-size:0.75rem; background:rgba(6,182,212,0.18); color:#38BDF8; border:1px solid rgba(6,182,212,0.4); padding:2px 7px; border-radius:6px; font-weight:700;">${escapeHtml(plate.code)}</span>` : ''}
-                  <span class="plate-color-badge badge-color-${plate.theme === 'black' ? 'black' : 'white'}">${plate.theme === 'black' ? '⚫ Preto' : '⚪ Branco'}</span>
+                  <div class="plate-card-color-switch" data-id="${plate.id}" title="Escolher cor da plaquinha">
+                    <button type="button" 
+                            class="card-color-opt-btn opt-white ${plate.theme !== 'black' ? 'active' : ''}" 
+                            data-id="${plate.id}" 
+                            data-theme="white" 
+                            title="Definir cor da placa como Clean Branco (⚪)">
+                      <span class="color-dot dot-white"></span> Branco
+                    </button>
+                    <button type="button" 
+                            class="card-color-opt-btn opt-black ${plate.theme === 'black' ? 'active' : ''}" 
+                            data-id="${plate.id}" 
+                            data-theme="black" 
+                            title="Definir cor da placa como Black Premium (⚫)">
+                      <span class="color-dot dot-black"></span> Preto
+                    </button>
+                  </div>
                 </div>
                 <span class="plate-location-badge">📍 ${escapeHtml(plate.location || 'Geral')}</span>
                 ${ownerBadge}
@@ -686,6 +701,55 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
           console.error(err);
           showToast('Erro de conexão ao alterar cliente.', true);
+        }
+      });
+    });
+
+    // Seletor rápido de cor da placa no card (1 clique sem precisar entrar em editar)
+    document.querySelectorAll('.card-color-opt-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const plateId = btn.getAttribute('data-id');
+        const theme = btn.getAttribute('data-theme');
+        const plate = state.plates.find(p => String(p.id) === String(plateId));
+        if (plate && plate.theme === theme) return;
+
+        // Feedback visual imediato e otimista no card
+        const container = btn.closest('.plate-card-color-switch');
+        if (container) {
+          container.querySelectorAll('.card-color-opt-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        }
+        if (plate) {
+          plate.theme = theme;
+        }
+
+        try {
+          const res = await fetchWithAuth(`/api/plates/${plateId}/theme`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ theme })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast(`Placa ${plate?.code || plate?.name || ''} definida como ${theme === 'black' ? 'Black Premium ⚫' : 'Clean Branco ⚪'}!`);
+            // Sincroniza também com o estúdio gráfico caso esta seja a placa em foco
+            if (studioState.selectedPlateId === plateId) {
+              studioState.theme = theme;
+              if (btnThemeWhite && btnThemeBlack) {
+                btnThemeWhite.classList.toggle('active', theme === 'white');
+                btnThemeBlack.classList.toggle('active', theme === 'black');
+              }
+            }
+          } else {
+            showToast(data.message || 'Erro ao alterar cor da placa.', true);
+            await fetchPlates();
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Erro de conexão ao alterar cor.', true);
+          await fetchPlates();
         }
       });
     });
@@ -903,10 +967,27 @@ document.addEventListener('DOMContentLoaded', () => {
       batchCount.addEventListener('input', updateBatchPreviewRange);
     }
 
-    // Seletor de Tema/Cor nos Modais
+    // Seletor de Tema/Cor nos Modais (clique direto nos cards label e inputs)
+    const lblPlateThemeWhite = document.getElementById('labelPlateThemeWhite');
+    const lblPlateThemeBlack = document.getElementById('labelPlateThemeBlack');
+    if (lblPlateThemeWhite) {
+      lblPlateThemeWhite.addEventListener('click', () => setFormPlateTheme('white'));
+    }
+    if (lblPlateThemeBlack) {
+      lblPlateThemeBlack.addEventListener('click', () => setFormPlateTheme('black'));
+    }
     document.querySelectorAll('input[name="formPlateTheme"]').forEach(input => {
       input.addEventListener('change', () => setFormPlateTheme(input.value));
     });
+
+    const lblBatchThemeWhite = document.getElementById('labelBatchThemeWhite');
+    const lblBatchThemeBlack = document.getElementById('labelBatchThemeBlack');
+    if (lblBatchThemeWhite) {
+      lblBatchThemeWhite.addEventListener('click', () => setBatchPlateTheme('white'));
+    }
+    if (lblBatchThemeBlack) {
+      lblBatchThemeBlack.addEventListener('click', () => setBatchPlateTheme('black'));
+    }
     document.querySelectorAll('input[name="batchPlateTheme"]').forEach(input => {
       input.addEventListener('change', () => setBatchPlateTheme(input.value));
     });
@@ -1012,8 +1093,10 @@ document.addEventListener('DOMContentLoaded', () => {
     adminChangePasswordForm.addEventListener('submit', handleAdminSavePassword);
   }
 
+  let currentModalPlateTheme = 'white';
   function setFormPlateTheme(theme) {
-    const isWhite = theme !== 'black';
+    currentModalPlateTheme = (theme === 'black') ? 'black' : 'white';
+    const isWhite = currentModalPlateTheme === 'white';
     const radWhite = document.querySelector('input[name="formPlateTheme"][value="white"]');
     const radBlack = document.querySelector('input[name="formPlateTheme"][value="black"]');
     const lblWhite = document.getElementById('labelPlateThemeWhite');
@@ -1024,8 +1107,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (lblBlack) lblBlack.classList.toggle('active', !isWhite);
   }
 
+  let currentBatchPlateTheme = 'white';
   function setBatchPlateTheme(theme) {
-    const isWhite = theme !== 'black';
+    currentBatchPlateTheme = (theme === 'black') ? 'black' : 'white';
+    const isWhite = currentBatchPlateTheme === 'white';
     const radWhite = document.querySelector('input[name="batchPlateTheme"][value="white"]');
     const radBlack = document.querySelector('input[name="batchPlateTheme"][value="black"]');
     const lblWhite = document.getElementById('labelBatchThemeWhite');
@@ -1154,7 +1239,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const assignedUserId = batchModalAssignUser ? batchModalAssignUser.value : undefined;
     const location = document.getElementById('batchLocation')?.value?.trim() || 'Balcão';
     const batchThemeRadio = document.querySelector('input[name="batchPlateTheme"]:checked');
-    const theme = batchThemeRadio ? batchThemeRadio.value : 'white';
+    const theme = currentBatchPlateTheme || (batchThemeRadio ? batchThemeRadio.value : 'white');
 
     btnSubmitBatchCreate.disabled = true;
     const originalText = btnSubmitBatchCreate.innerHTML;
@@ -1220,7 +1305,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const id = formPlateId.value;
     const themeRadio = document.querySelector('input[name="formPlateTheme"]:checked');
-    const selectedTheme = themeRadio ? themeRadio.value : 'white';
+    const selectedTheme = currentModalPlateTheme || (themeRadio ? themeRadio.value : 'white');
 
     const payload = {
       name: formName.value.trim(),
