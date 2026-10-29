@@ -617,16 +617,26 @@ app.post('/api/plates', authenticate, async (req, res) => {
       ownerId = assignedUserId;
     }
 
+    let plateCode = req.body.code;
+    if (!plateCode) {
+      try {
+        plateCode = await db.getNextPlateCode();
+      } catch (e) {
+        plateCode = 'PI-121';
+      }
+    }
+
     const newPlate = {
       id: 'plk-' + Math.random().toString(36).substring(2, 9),
       userId: ownerId,
       slug: uniqueSlug,
+      code: plateCode,
       name: name.trim(),
       location: (location || 'Balcão / Entrada').trim(),
       type: type || 'google',
       destinationUrl: destinationUrl.trim(),
       isActive: true,
-      notes: '',
+      notes: `[${plateCode}]`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       scans: {

@@ -105,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnDownloadSvg = document.getElementById('btnDownloadSvg');
   const btnTestNfc = document.getElementById('btnTestNfc');
   const btnTestQr = document.getElementById('btnTestQr');
+  const btnStudioOpenPrintModal = document.getElementById('btnStudioOpenPrintModal');
 
   const usersModal = document.getElementById('usersModal');
   const btnCloseUsersModal = document.getElementById('btnCloseUsersModal');
@@ -846,6 +847,13 @@ document.addEventListener('DOMContentLoaded', () => {
         await fetchPlates();
         await fetchAnalytics();
         if (state.currentUser?.role === 'admin') fetchUsersList();
+
+        // Vincula a placa recém-criada ao Estúdio de Impressão
+        if (data.plate && data.plate.id) {
+          state.lastCreatedPlateId = data.plate.id;
+          studioState.selectedPlateId = data.plate.id;
+          studioState.mode = 'existing';
+        }
       } else {
         showToast(data.message || 'Erro ao salvar placa.', true);
       }
@@ -1319,7 +1327,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ESTÚDIO GRÁFICO & IMPRESSÃO A4 (10x15 CM)
   // ==========================================
   let studioState = {
-    mode: 'batch', // 'batch' ou 'existing'
+    mode: 'existing', // 'existing' por padrão para imprimir a placa cadastrada
     theme: 'white', // 'white' ou 'black'
     layout: 2, // 1, 2 ou 4
     showCropMarks: true,
@@ -1330,10 +1338,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function setupStudioEventListeners() {
     if (btnOpenPrintStudio) {
-      btnOpenPrintStudio.addEventListener('click', openPrintStudioModal);
+      btnOpenPrintStudio.addEventListener('click', () => openPrintStudioModal());
     }
     if (btnClosePrintStudio) {
       btnClosePrintStudio.addEventListener('click', closePrintStudioModal);
+    }
+    if (btnStudioOpenPrintModal) {
+      btnStudioOpenPrintModal.addEventListener('click', () => {
+        const plate = state.selectedPlateForStudio;
+        if (plate) {
+          closeStudioModal();
+          openPrintStudioModalWithPlate(plate.id);
+        }
+      });
     }
 
     // Alternância de modo (Novo Lote vs Placas Existentes)
@@ -1449,8 +1466,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function openPrintStudioModal() {
+  async function openPrintStudioModal(targetPlateId) {
     await fetchNextPlateCode();
+
+    if (targetPlateId) {
+      studioState.selectedPlateId = targetPlateId;
+      studioState.mode = 'existing';
+    } else if (!studioState.selectedPlateId && state.plates.length > 0) {
+      studioState.selectedPlateId = state.lastCreatedPlateId || state.plates[0].id;
+    }
+
+    // Atualiza estado visual das abas de acordo com o modo
+    if (studioState.mode === 'existing') {
+      if (tabModeExisting) tabModeExisting.classList.add('active');
+      if (tabModeBatch) tabModeBatch.classList.remove('active');
+      if (sectionBatchConfig) sectionBatchConfig.style.display = 'none';
+      if (sectionExistingConfig) sectionExistingConfig.style.display = 'block';
+    } else {
+      if (tabModeBatch) tabModeBatch.classList.add('active');
+      if (tabModeExisting) tabModeExisting.classList.remove('active');
+      if (sectionBatchConfig) sectionBatchConfig.style.display = 'block';
+      if (sectionExistingConfig) sectionExistingConfig.style.display = 'none';
+    }
 
     // Popula dropdown de clientes no estúdio
     if (studioAssignUser) {
@@ -1464,13 +1501,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Popula dropdown de placas existentes
     if (studioSelectExistingPlates) {
       studioSelectExistingPlates.innerHTML = state.plates.map(p => `
-        <option value="${p.id}">
+        <option value="${p.id}" ${String(p.id) === String(studioState.selectedPlateId) ? 'selected' : ''}>
           ${p.code ? '[' + p.code + '] ' : ''}${escapeHtml(p.name)} (${escapeHtml(p.slug)})
         </option>
       `).join('') || '<option value="">Nenhuma placa cadastrada</option>';
 
-      if (state.plates.length > 0 && !studioState.selectedPlateId) {
-        studioState.selectedPlateId = state.plates[0].id;
+      if (studioState.selectedPlateId) {
+        studioSelectExistingPlates.value = studioState.selectedPlateId;
       }
     }
 
@@ -1483,18 +1520,10 @@ document.addEventListener('DOMContentLoaded', () => {
     printStudioModal.classList.add('is-active');
   }
 
-  function openPrintStudioModalWithPlate(plateId) {
+  async function openPrintStudioModalWithPlate(plateId) {
     studioState.mode = 'existing';
     studioState.selectedPlateId = plateId;
-    if (tabModeExisting) tabModeExisting.classList.add('active');
-    if (tabModeBatch) tabModeBatch.classList.remove('active');
-    if (sectionBatchConfig) sectionBatchConfig.style.display = 'none';
-    if (sectionExistingConfig) sectionExistingConfig.style.display = 'block';
-
-    openPrintStudioModal();
-    if (studioSelectExistingPlates) {
-      studioSelectExistingPlates.value = plateId;
-    }
+    await openPrintStudioModal(plateId);
   }
 
   function closePrintStudioModal() {
@@ -1502,7 +1531,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Gera o HTML da Arte Vetorial 10x15 cm de alta resolução
-  function renderPlateCardHtml(plateCode, plateSlug, theme, showCropMarks) {
+  function renderPlateCardHtml(plateOrData, theme, showCropMarks) {
+    let plateCode = 'PI-121';
+    let plateSlug = 'placa';
+    let plateName = '';
+    let plateType = 'google';
+
+    if (typeof plateOrData === 'object' && plateOrData !== null) {
+      plateCode = plateOrData.code || 'PI-121';
+      plateSlug = plateOrData.slug || 'placa';
+      plateName = plateOrData.name || '';
+      plateType = plateOrData.type || 'google';
+    } else {
+      plateCode = arguments[0] || 'PI-121';
+      plateSlug = arguments[1] || 'placa';
+      theme = arguments[2] || theme;
+      showCropMarks = arguments[3] !== undefined ? arguments[3] : showCropMarks;
+    }
+
     const isDark = theme === 'black';
     const host = window.location.host;
     const protocol = window.location.protocol;
@@ -1519,6 +1565,90 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const qrEndpoint = `/api/qrcode/${plateSlug}?src=qr&format=svg&bg=${isDark ? '18181b' : 'ffffff'}&color=${isDark ? 'ffffff' : '000000'}&margin=1`;
 
+    const isInstagram = plateType === 'instagram';
+    const isWhatsapp = plateType === 'whatsapp';
+
+    let headerVisualHtml = '';
+    let qrCenterBadgeHtml = '';
+
+    if (isInstagram) {
+      headerVisualHtml = `
+        <svg class="plate-instagram-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 13mm; height: 13mm; color: #E1306C; margin-bottom: 1mm;">
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+        </svg>
+        <h4 class="plate-title-rate" style="color: #E1306C;">SIGA-NOS NO</h4>
+        <div class="plate-google-word" style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Instagram</div>
+        <div class="plate-divider-line" style="background: linear-gradient(45deg, #f09433, #dc2743, #bc1888);"></div>
+        <p class="plate-opinion-sub">${escapeHtml(plateName || 'ACOMPANHE NOSSAS NOVIDADES')}</p>
+      `;
+      qrCenterBadgeHtml = `
+        <div class="qr-center-google-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#E1306C" stroke-width="2.2" style="width:75%; height:75%;">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+          </svg>
+        </div>
+      `;
+    } else if (isWhatsapp) {
+      headerVisualHtml = `
+        <svg class="plate-whatsapp-logo" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2" style="width: 13mm; height: 13mm; margin-bottom: 1mm;">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+        </svg>
+        <h4 class="plate-title-rate" style="color: #25D366;">FALE CONOSCO NO</h4>
+        <div class="plate-google-word" style="color: #25D366;">WhatsApp</div>
+        <div class="plate-divider-line" style="background: #25D366;"></div>
+        <p class="plate-opinion-sub">${escapeHtml(plateName || 'ATENDIMENTO RÁPIDO')}</p>
+      `;
+      qrCenterBadgeHtml = `
+        <div class="qr-center-google-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2.2" style="width:75%; height:75%;">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+          </svg>
+        </div>
+      `;
+    } else {
+      // Google Review Padrão
+      headerVisualHtml = `
+        <!-- Logo 3D Oficial Google G -->
+        <svg class="plate-google-g-logo" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+
+        <!-- 5 Estrelas Douradas -->
+        <div class="plate-stars-row">
+          <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        </div>
+
+        <!-- Chamada Oficial -->
+        <h4 class="plate-title-rate">NOS AVALIE NO</h4>
+        <div class="plate-google-word">
+          <span class="g-blue">G</span><span class="g-red">o</span><span class="g-yellow">o</span><span class="g-blue">g</span><span class="g-green">l</span><span class="g-red">e</span>
+        </div>
+        <div class="plate-divider-line"></div>
+        <p class="plate-opinion-sub">${escapeHtml(plateName ? `${plateName} • SUA OPINIÃO FAZ A DIFERENÇA!` : 'SUA OPINIÃO FAZ A DIFERENÇA!')}</p>
+      `;
+      qrCenterBadgeHtml = `
+        <div class="qr-center-google-badge">
+          <svg viewBox="0 0 48 48" style="width:100%; height:100%;">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+        </div>
+      `;
+    }
+
     return `
       <div class="print-plate-wrapper">
         ${cropMarksHtml}
@@ -1528,32 +1658,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
           <!-- Corpo da Arte -->
           <div class="plate-content-body">
-            <!-- Cabeçalho Google e Estrelas -->
+            <!-- Cabeçalho Dinâmico -->
             <div class="plate-header-section">
-              <!-- Logo 3D Oficial Google G -->
-              <svg class="plate-google-g-logo" viewBox="0 0 48 48">
-                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-              </svg>
-
-              <!-- 5 Estrelas Douradas -->
-              <div class="plate-stars-row">
-                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-              </div>
-
-              <!-- Chamada Oficial -->
-              <h4 class="plate-title-rate">NOS AVALIE NO</h4>
-              <div class="plate-google-word">
-                <span class="g-blue">G</span><span class="g-red">o</span><span class="g-yellow">o</span><span class="g-blue">g</span><span class="g-green">l</span><span class="g-red">e</span>
-              </div>
-              <div class="plate-divider-line"></div>
-              <p class="plate-opinion-sub">SUA OPINIÃO FAZ A DIFERENÇA!</p>
+              ${headerVisualHtml}
             </div>
 
             <!-- Caixas Centrais Lado a Lado (QR Code + NFC) -->
@@ -1563,14 +1670,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="plate-frame-gradient">
                   <div class="plate-frame-inner">
                     <img src="${qrEndpoint}" data-slug="${plateSlug}" class="qr-code-rendered-img" alt="QR Code">
-                    <div class="qr-center-google-badge">
-                      <svg viewBox="0 0 48 48" style="width:100%; height:100%;">
-                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                      </svg>
-                    </div>
+                    ${qrCenterBadgeHtml}
                   </div>
                 </div>
                 <div class="plate-pill-instruction">
@@ -1638,10 +1738,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const count = studioState.layout;
     a4SheetInner.className = `a4-sheet-inner layout-${count}`;
 
-    if (canvasPlatesSummary) {
-      canvasPlatesSummary.textContent = `${count} Placa(s) na Folha (10x15cm)`;
-    }
-
     let cardsHtml = '';
 
     if (studioState.mode === 'batch') {
@@ -1649,19 +1745,38 @@ document.addEventListener('DOMContentLoaded', () => {
       let baseNum = parseInt(baseNumStr, 10);
       if (isNaN(baseNum)) baseNum = 121;
 
+      if (canvasPlatesSummary) {
+        canvasPlatesSummary.textContent = `Novo Lote (${studioState.nextCode}...) • ${count} Placa(s) na Folha (10x15cm)`;
+      }
+
       for (let i = 0; i < count; i++) {
         const currentCode = `PI-${baseNum + i}`;
         const currentSlug = `pi-${baseNum + i}`;
-        cardsHtml += renderPlateCardHtml(currentCode, currentSlug, studioState.theme, studioState.showCropMarks);
+        cardsHtml += renderPlateCardHtml({
+          code: currentCode,
+          slug: currentSlug,
+          name: `Placa Inteligente ${currentCode}`,
+          type: 'google'
+        }, studioState.theme, studioState.showCropMarks);
       }
     } else {
-      // Modo de placas existentes
-      const plate = state.plates.find(p => p.id === studioState.selectedPlateId) || state.plates[0];
-      const code = plate?.code || 'PI-121';
-      const slug = plate?.slug || 'placa';
+      // Modo de placas existentes (padrão)
+      const plate = state.plates.find(p => String(p.id) === String(studioState.selectedPlateId)) || state.plates[0];
 
-      for (let i = 0; i < count; i++) {
-        cardsHtml += renderPlateCardHtml(code, slug, studioState.theme, studioState.showCropMarks);
+      if (canvasPlatesSummary) {
+        canvasPlatesSummary.textContent = plate 
+          ? `[${plate.code || 'PI'}] ${plate.name} • ${count} cópia(s) na Folha (10x15cm)`
+          : `${count} Placa(s) na Folha (10x15cm)`;
+      }
+
+      if (plate) {
+        for (let i = 0; i < count; i++) {
+          cardsHtml += renderPlateCardHtml(plate, studioState.theme, studioState.showCropMarks);
+        }
+      } else {
+        cardsHtml = `<div style="padding: 40px; text-align: center; color: #94a3b8; font-size: 1rem; width: 100%;">
+          Nenhuma placa cadastrada encontrada. Cadastre uma placa primeiro ou alterne para o modo "Gerar Novo Lote".
+        </div>`;
       }
     }
 
@@ -1722,10 +1837,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      let fileSuffix = studioState.theme;
+      if (studioState.mode === 'existing') {
+        const p = state.plates.find(pl => String(pl.id) === String(studioState.selectedPlateId));
+        if (p) fileSuffix = `${p.slug}-${studioState.theme}`;
+      }
+
       // Prepara opções do html2pdf para escala exata A4 sem distorção
       const opt = {
         margin: 0,
-        filename: `folha-grafica-a4-${studioState.theme}-${Date.now()}.pdf`,
+        filename: `folha-grafica-a4-${fileSuffix}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 3, // 300 DPI real

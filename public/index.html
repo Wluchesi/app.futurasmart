@@ -437,6 +437,11 @@
               </a>
             </div>
 
+            <button type="button" id="btnStudioOpenPrintModal" class="btn-primary" style="width: 100%; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              🖨️ Imprimir Arte 10x15 cm na Folha A4
+            </button>
+
             <!-- Testing live redirection -->
             <div class="test-live-box">
               <div class="test-live-info">
@@ -727,13 +732,23 @@
           <div class="studio-control-group">
             <label class="studio-group-label">Origem das Placas</label>
             <div class="studio-segmented-pill">
-              <button type="button" class="studio-seg-btn active" id="tabModeBatch">✨ Gerar Novo Lote (PI-121...)</button>
-              <button type="button" class="studio-seg-btn" id="tabModeExisting">📋 Placas Já Cadastradas</button>
+              <button type="button" class="studio-seg-btn active" id="tabModeExisting">📋 Placas Já Cadastradas</button>
+              <button type="button" class="studio-seg-btn" id="tabModeBatch">✨ Gerar Novo Lote (PI-121...)</button>
+            </div>
+          </div>
+
+          <!-- Configuração de Placas Existentes (Padrão) -->
+          <div id="sectionExistingConfig" style="display: block;">
+            <div class="studio-control-group">
+              <label class="studio-group-label" for="studioSelectExistingPlates">Selecione a Placa para Impressão</label>
+              <select id="studioSelectExistingPlates" class="studio-select">
+                <!-- Populado dinamicamente com as placas do sistema -->
+              </select>
             </div>
           </div>
 
           <!-- Configuração do Lote Sequencial -->
-          <div id="sectionBatchConfig">
+          <div id="sectionBatchConfig" style="display: none;">
             <div class="studio-control-group">
               <div class="studio-code-callout">
                 <div class="callout-code-header">
@@ -757,12 +772,6 @@
               </select>
             </div>
           </div>
-
-          <!-- Configuração de Placas Existentes -->
-          <div id="sectionExistingConfig" style="display: none;">
-            <div class="studio-control-group">
-              <label class="studio-group-label" for="studioSelectExistingPlates">Selecione a Placa para Impressão</label>
-              <select id="studioSelectExistingPlates" class="studio-select">
                 <!-- Populado dinamicamente com as placas do sistema -->
               </select>
             </div>
