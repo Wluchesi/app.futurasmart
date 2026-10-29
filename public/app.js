@@ -1328,14 +1328,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   let studioState = {
     mode: 'existing', // 'existing' por padrão para imprimir a placa cadastrada
-    theme: 'white', // 'white', 'black', 'gold' ou 'blue'
+    theme: 'white', // 'white' ou 'black'
     layout: 2, // 1, 2 ou 4
     showCropMarks: true,
     nextCode: 'PI-121',
     zoom: 0.6,
     selectedPlateId: null,
     slotPlateIds: [], // Array de IDs de placas para cada posição na folha A4
-    slotThemes: [] // Array de temas/cores para cada posição ('white', 'black', 'gold', 'blue')
+    slotThemes: [] // Array de temas para cada posição ('white' ou 'black')
   };
 
   function setupStudioEventListeners() {
