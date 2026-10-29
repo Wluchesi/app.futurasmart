@@ -565,8 +565,11 @@ document.addEventListener('DOMContentLoaded', () => {
               ` : ''}
               <div class="plate-title-group">
                 <div class="plate-name">
-                  ${escapeHtml(plate.name)}
-                  ${plate.code ? `<span class="badge-plate-code" style="margin-left:6px; font-size:0.75rem; background:rgba(6,182,212,0.18); color:#38BDF8; border:1px solid rgba(6,182,212,0.4); padding:2px 7px; border-radius:6px; font-weight:700;">${escapeHtml(plate.code)}</span>` : ''}
+                  <span>${escapeHtml(plate.name)}</span>
+                  ${plate.code ? `<span class="badge-plate-code" style="font-size:0.75rem; background:rgba(6,182,212,0.18); color:#38BDF8; border:1px solid rgba(6,182,212,0.4); padding:2px 7px; border-radius:6px; font-weight:700;">${escapeHtml(plate.code)}</span>` : ''}
+                </div>
+                <div class="plate-sub-meta-row">
+                  <span class="plate-location-badge">📍 ${escapeHtml(plate.location || 'Geral')}</span>
                   <div class="plate-card-color-switch" data-id="${plate.id}" title="Escolher cor da plaquinha">
                     <button type="button" 
                             class="card-color-opt-btn opt-white ${plate.theme !== 'black' ? 'active' : ''}" 
@@ -584,7 +587,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </button>
                   </div>
                 </div>
-                <span class="plate-location-badge">📍 ${escapeHtml(plate.location || 'Geral')}</span>
                 ${ownerBadge}
               </div>
 

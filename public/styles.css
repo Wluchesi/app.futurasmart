@@ -912,6 +912,7 @@ body {
   justify-content: space-between;
   transition: var(--transition);
   position: relative;
+  overflow: hidden;
 }
 
 .plate-item-card:hover {
@@ -935,16 +936,26 @@ body {
 
 .plate-title-group {
   flex: 1;
+  min-width: 0;
 }
 
 .plate-name {
   font-size: 1.05rem;
   font-weight: 700;
   color: #FFFFFF;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plate-sub-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
 }
 
 .plate-location-badge {
@@ -962,6 +973,8 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+  margin-left: 6px;
 }
 
 .toggle-switch {
@@ -4200,9 +4213,10 @@ html, body {
   border-radius: 8px;
   padding: 2px;
   gap: 3px;
-  margin-left: 8px;
+  margin: 0;
   vertical-align: middle;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
 }
 
 .card-color-opt-btn {
