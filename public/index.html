@@ -385,6 +385,32 @@
             </div>
           </div>
 
+          <!-- Barra de Ação em Lote: Deixar Visível para Cliente -->
+          <div id="batchActionBar" class="batch-action-bar" style="display: none;">
+            <div class="batch-action-inner">
+              <div class="batch-action-left">
+                <span class="batch-pulse-icon">✨</span>
+                <span class="batch-counter-text"><strong id="batchSelectedCount">0</strong> plaquinha(s) selecionada(s)</span>
+              </div>
+              <div class="batch-action-controls">
+                <span class="batch-label">Disponibilizar para:</span>
+                <select id="batchAssignUserSelect" class="batch-select">
+                  <!-- Populado dinamicamente via JS com os clientes cadastrados -->
+                </select>
+                <button type="button" id="btnBatchAssignSubmit" class="btn-primary btn-batch-apply">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Aplicar
+                </button>
+                <button type="button" id="btnBatchSelectAll" class="btn-batch-btn">
+                  Selecionar Todas
+                </button>
+                <button type="button" id="btnBatchClearSelection" class="btn-batch-btn btn-batch-clear">
+                  ✕ Desmarcar
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div class="plates-grid" id="platesGrid">
             <!-- Dynamically populated via JS -->
             <div class="loading-state">

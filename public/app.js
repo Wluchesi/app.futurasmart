@@ -89,6 +89,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('searchInput');
   const filterPills = document.querySelectorAll('.filter-pill');
 
+  // DOM Elements - Batch Action Bar (Visibilidade para Clientes)
+  const batchActionBar = document.getElementById('batchActionBar');
+  const batchSelectedCount = document.getElementById('batchSelectedCount');
+  const batchAssignUserSelect = document.getElementById('batchAssignUserSelect');
+  const btnBatchAssignSubmit = document.getElementById('btnBatchAssignSubmit');
+  const btnBatchSelectAll = document.getElementById('btnBatchSelectAll');
+  const btnBatchClearSelection = document.getElementById('btnBatchClearSelection');
+
+  let selectedPlateIds = new Set();
+
   // Modals
   const authModal = document.getElementById('authModal');
   const tabBtnLogin = document.getElementById('tabBtnLogin');
@@ -256,10 +266,24 @@ document.addEventListener('DOMContentLoaded', () => {
     state.currentUser = null;
     state.token = null;
     state.selectedUserFilter = 'all';
+    selectedPlateIds.clear();
+    updateBatchActionBar();
     localStorage.removeItem('futura_smart_token');
     if (adminUserFilterSection) adminUserFilterSection.style.display = 'none';
     openAuthModal();
     showToast('Você saiu do sistema.');
+  }
+
+  function updateBatchActionBar() {
+    if (!batchActionBar) return;
+    const count = selectedPlateIds.size;
+    if (batchSelectedCount) batchSelectedCount.textContent = count;
+
+    if (count > 0 && state.currentUser?.role === 'admin') {
+      batchActionBar.style.display = 'block';
+    } else {
+      batchActionBar.style.display = 'none';
+    }
   }
 
   // ==========================================
@@ -476,6 +500,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const protocol = window.location.protocol;
     const isAdmin = state.currentUser?.role === 'admin';
 
+    updateBatchActionBar();
+
     platesGrid.innerHTML = filtered.map(plate => {
       const redirectUrl = `${protocol}//${host}/r/${plate.slug}`;
       const typeIcons = {
@@ -490,17 +516,36 @@ document.addEventListener('DOMContentLoaded', () => {
       const qrCount = plate.scans?.qr || 0;
       const totalCount = plate.scans?.total || 0;
 
-      // Se for Admin, mostra etiqueta do cliente/dono da placa
-      const ownerBadge = isAdmin && plate.ownerName ? `
-        <div class="plate-owner-tag" title="Cliente / Proprietário: ${escapeHtml(plate.ownerEmail)}">
-          👤 ${escapeHtml(plate.ownerName)}
-        </div>
-      ` : '';
+      // Se for Admin, mostra etiqueta e seletor rápido para atribuir a cliente com 1 clique
+      let ownerBadge = '';
+      if (isAdmin) {
+        const userOptions = (state.users || []).map(u => {
+          const isSelected = plate.userId === u.id;
+          const roleTag = u.role === 'admin' ? ' (Admin)' : '';
+          return `<option value="${escapeHtml(u.id)}" ${isSelected ? 'selected' : ''}>${escapeHtml(u.name)}${roleTag}</option>`;
+        }).join('');
+
+        ownerBadge = `
+          <div class="plate-owner-select-wrapper" title="Visível para o cliente selecionado. Altere com 1 clique!">
+            <span class="owner-icon">👤</span>
+            <select class="quick-assign-user-select" data-id="${plate.id}" title="Alterar para quem esta placa fica visível">
+              ${userOptions || `<option value="${plate.userId}">${escapeHtml(plate.ownerName || 'Cliente')}</option>`}
+            </select>
+          </div>
+        `;
+      }
+
+      const isSelected = selectedPlateIds.has(plate.id);
 
       return `
-        <div class="plate-item-card ${!plate.isActive ? 'is-paused' : ''}" data-id="${plate.id}">
+        <div class="plate-item-card ${!plate.isActive ? 'is-paused' : ''} ${isSelected ? 'is-selected' : ''}" data-id="${plate.id}">
           <div>
             <div class="card-top">
+              ${isAdmin ? `
+                <div class="plate-select-box" title="Selecionar placa para ação em lote">
+                  <input type="checkbox" class="plate-select-checkbox" data-id="${plate.id}" ${isSelected ? 'checked' : ''}>
+                </div>
+              ` : ''}
               <div class="plate-title-group">
                 <div class="plate-name">
                   ${escapeHtml(plate.name)}
@@ -583,6 +628,50 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function attachCardListeners() {
+    // Checkbox de seleção da placa (Ação em Lote)
+    document.querySelectorAll('.plate-select-checkbox').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const id = cb.getAttribute('data-id');
+        const card = cb.closest('.plate-item-card');
+        if (cb.checked) {
+          selectedPlateIds.add(id);
+          if (card) card.classList.add('is-selected');
+        } else {
+          selectedPlateIds.delete(id);
+          if (card) card.classList.remove('is-selected');
+        }
+        updateBatchActionBar();
+      });
+    });
+
+    // Seletor rápido de cliente no card da placa (1 clique)
+    document.querySelectorAll('.quick-assign-user-select').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        const plateId = sel.getAttribute('data-id');
+        const targetUserId = sel.value;
+        const targetUser = (state.users || []).find(u => u.id === targetUserId);
+        const targetName = targetUser ? targetUser.name : 'novo cliente';
+        try {
+          const res = await fetchWithAuth(`/api/plates/${plateId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ assignedUserId: targetUserId })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast(`Placa agora está visível para ${targetName}!`);
+            await fetchPlates();
+            if (state.currentUser?.role === 'admin') fetchUsersList();
+          } else {
+            showToast(data.message || 'Erro ao alterar cliente da placa.', true);
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Erro de conexão ao alterar cliente.', true);
+        }
+      });
+    });
+
     // Imprimir arte 10x15 individual
     document.querySelectorAll('.btn-print-plate').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -693,6 +782,78 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnClearUserFilter) {
       btnClearUserFilter.addEventListener('click', () => {
         setUserFilter('all');
+      });
+    }
+
+    // Ações da Barra em Lote (Disponibilizar para Cliente / Chiara)
+    if (btnBatchSelectAll) {
+      btnBatchSelectAll.addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('.plate-select-checkbox');
+        checkboxes.forEach(cb => {
+          const id = cb.getAttribute('data-id');
+          selectedPlateIds.add(id);
+          cb.checked = true;
+          const card = cb.closest('.plate-item-card');
+          if (card) card.classList.add('is-selected');
+        });
+        updateBatchActionBar();
+        showToast(`${selectedPlateIds.size} placa(s) selecionada(s).`);
+      });
+    }
+
+    if (btnBatchClearSelection) {
+      btnBatchClearSelection.addEventListener('click', () => {
+        selectedPlateIds.clear();
+        document.querySelectorAll('.plate-select-checkbox').forEach(cb => cb.checked = false);
+        document.querySelectorAll('.plate-item-card').forEach(c => c.classList.remove('is-selected'));
+        updateBatchActionBar();
+      });
+    }
+
+    if (btnBatchAssignSubmit) {
+      btnBatchAssignSubmit.addEventListener('click', async () => {
+        if (selectedPlateIds.size === 0) {
+          showToast('Nenhuma placa selecionada.', true);
+          return;
+        }
+        const targetUserId = batchAssignUserSelect?.value;
+        if (!targetUserId) {
+          showToast('Selecione o cliente de destino para aplicar.', true);
+          if (batchAssignUserSelect) batchAssignUserSelect.focus();
+          return;
+        }
+
+        const targetUser = (state.users || []).find(u => u.id === targetUserId);
+        const targetName = targetUser ? targetUser.name : 'cliente selecionado';
+        const plateIds = Array.from(selectedPlateIds);
+
+        btnBatchAssignSubmit.disabled = true;
+        const originalText = btnBatchAssignSubmit.innerHTML;
+        btnBatchAssignSubmit.innerHTML = 'Aplicando...';
+
+        try {
+          const res = await fetchWithAuth('/api/plates/batch-assign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plateIds, targetUserId })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast(`Sucesso! ${data.count} placa(s) agora estão visíveis para ${targetName}!`);
+            selectedPlateIds.clear();
+            updateBatchActionBar();
+            await fetchPlates();
+            if (state.currentUser?.role === 'admin') fetchUsersList();
+          } else {
+            showToast(data.message || 'Erro ao atribuir placas.', true);
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Erro de conexão ao atribuir placas em lote.', true);
+        } finally {
+          btnBatchAssignSubmit.disabled = false;
+          btnBatchAssignSubmit.innerHTML = originalText;
+        }
       });
     }
 
@@ -995,6 +1156,17 @@ document.addEventListener('DOMContentLoaded', () => {
     selectPlateUserFilter.innerHTML = selectHtml;
     userFilterChipsList.innerHTML = chipsHtml;
 
+    // Popula o select da barra de ação em lote com os clientes cadastrados
+    if (batchAssignUserSelect) {
+      let batchOptions = `<option value="">-- Selecione o Cliente (ex: Chiara) --</option>`;
+      state.users.forEach(u => {
+        const isClient = u.role !== 'admin';
+        const roleTag = isClient ? '👤' : '⭐ Admin';
+        batchOptions += `<option value="${escapeHtml(u.id)}">${roleTag} ${escapeHtml(u.name)} (${escapeHtml(u.email)})</option>`;
+      });
+      batchAssignUserSelect.innerHTML = batchOptions;
+    }
+
     // Conecta cliques aos chips
     userFilterChipsList.querySelectorAll('.user-filter-chip').forEach(chip => {
       chip.addEventListener('click', () => {
@@ -1013,6 +1185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         usersTotalCount.textContent = `Total: ${data.users.length} usuários cadastrados`;
         renderUsersTable(data.users);
         updateUserFilterUI();
+        renderPlates(); // Re-renderiza para atualizar nomes dos clientes nos cards
       }
     } catch (err) {
       console.error('Erro ao buscar usuários:', err);

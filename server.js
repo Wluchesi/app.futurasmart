@@ -490,7 +490,7 @@ app.get('/api/plates', authenticate, async (req, res) => {
     const users = await db.getUsers();
 
     if (req.user.role !== 'admin') {
-      plates = plates.filter(p => p.userId === req.user.id);
+      plates = plates.filter(p => p.userId === req.user.id || (Array.isArray(p.sharedWith) && p.sharedWith.includes(req.user.id)));
     } else {
       plates = plates.map(p => {
         const owner = users.find(u => u.id === p.userId);
@@ -507,6 +507,47 @@ app.get('/api/plates', authenticate, async (req, res) => {
   } catch (err) {
     console.error('Erro get plates:', err);
     res.status(500).json({ success: false, message: 'Erro ao buscar placas' });
+  }
+});
+
+// Atribuir / Disponibilizar múltiplas placas selecionadas para um cliente (Exclusivo Administrador)
+app.post('/api/plates/batch-assign', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Apenas administradores podem atribuir placas.' });
+    }
+
+    const { plateIds, targetUserId } = req.body;
+    if (!Array.isArray(plateIds) || plateIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Nenhuma placa informada.' });
+    }
+    if (!targetUserId) {
+      return res.status(400).json({ success: false, message: 'Cliente de destino é obrigatório.' });
+    }
+
+    const users = await db.getUsers();
+    const targetUser = users.find(u => u.id === targetUserId);
+    if (!targetUser) {
+      return res.status(404).json({ success: false, message: 'Cliente não encontrado.' });
+    }
+
+    const updatedPlates = [];
+    for (const plateId of plateIds) {
+      const updated = await db.updatePlate(plateId, { userId: targetUserId });
+      if (updated) {
+        updatedPlates.push(updated);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `${updatedPlates.length} placa(s) agora estão visíveis para ${targetUser.name}!`,
+      targetUserName: targetUser.name,
+      count: updatedPlates.length
+    });
+  } catch (err) {
+    console.error('Erro batch-assign:', err);
+    res.status(500).json({ success: false, message: 'Erro ao atribuir placas ao cliente.' });
   }
 });
 

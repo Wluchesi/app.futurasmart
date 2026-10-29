@@ -1,6 +1,62 @@
 {
   "plates": [
     {
+      "id": "plk-cobbss8",
+      "userId": "usr-vpr7uzk",
+      "slug": "pi-125",
+      "name": "Placa Inteligente PI-125",
+      "code": "PI-125",
+      "location": "Balcão",
+      "type": "google",
+      "destinationUrl": "https://search.google.com/local/writereview",
+      "isActive": true,
+      "notes": "Gerada no Estúdio Gráfico [PI-125] [PI-125]",
+      "createdAt": "2026-10-23T23:41:30.811Z",
+      "updatedAt": "2026-10-23T23:41:30.811Z"
+    },
+    {
+      "id": "plk-cm96m1y",
+      "userId": "usr-vpr7uzk",
+      "slug": "pi-124",
+      "name": "Placa Inteligente PI-124",
+      "code": "PI-124",
+      "location": "Balcão",
+      "type": "google",
+      "destinationUrl": "https://search.google.com/local/writereview",
+      "isActive": true,
+      "notes": "Gerada no Estúdio Gráfico [PI-124] [PI-124]",
+      "createdAt": "2026-10-23T23:41:29.949Z",
+      "updatedAt": "2026-10-23T23:41:29.949Z"
+    },
+    {
+      "id": "plk-yo3ti4l",
+      "userId": "usr-vpr7uzk",
+      "slug": "pi-123",
+      "name": "Placa Inteligente PI-123",
+      "code": "PI-123",
+      "location": "Balcão",
+      "type": "google",
+      "destinationUrl": "https://search.google.com/local/writereview",
+      "isActive": true,
+      "notes": "Gerada no Estúdio Gráfico [PI-123] [PI-123]",
+      "createdAt": "2026-10-23T23:41:29.449Z",
+      "updatedAt": "2026-10-23T23:41:29.449Z"
+    },
+    {
+      "id": "plk-qhz18n7",
+      "userId": "usr-vpr7uzk",
+      "slug": "pi-122",
+      "name": "Placa Inteligente PI-122",
+      "code": "PI-122",
+      "location": "Balcão",
+      "type": "google",
+      "destinationUrl": "https://search.google.com/local/writereview",
+      "isActive": true,
+      "notes": "Gerada no Estúdio Gráfico [PI-122] [PI-122]",
+      "createdAt": "2026-10-23T23:41:28.102Z",
+      "updatedAt": "2026-10-23T23:41:28.102Z"
+    },
+    {
       "id": "plk-rqmx94d",
       "userId": "usr-admin-01",
       "slug": "pl-121",
