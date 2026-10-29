@@ -883,8 +883,8 @@
                 </button>
               </div>
 
-              <!-- Container dinâmico com 1, 2 ou 4 seletores de placa -->
-              <div id="studioSlotsContainer" style="display: flex; flex-direction: column; gap: 8px;">
+              <!-- Container dinâmico com seletores de placa -->
+              <div id="studioSlotsContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 270px; overflow-y: auto; padding-right: 4px;">
                 <!-- Populado dinamicamente via JS de acordo com a distribuição escolhida -->
               </div>
             </div>
@@ -940,22 +940,59 @@
             </div>
           </div>
 
-          <!-- Quantidade de Placas na Folha A4 -->
+          <!-- Formato e Quantidade de Impressão -->
           <div class="studio-control-group">
-            <label class="studio-group-label">Distribuição na Folha A4 (210 x 297 mm)</label>
-            <div class="layout-selection-grid">
-              <button type="button" class="layout-btn-option" data-layout="1" id="btnLayout1">
-                <span class="layout-num">1</span>
-                <span class="layout-text">1 Placa / A4<br><small>Centralizada</small></span>
+            <label class="studio-group-label">Formato de Impressão</label>
+            <div class="print-mode-tabs">
+              <button type="button" class="print-mode-tab-btn active" id="btnModeRealSize">
+                <span style="font-size: 1.15rem;">📄</span>
+                <span>Tamanho Real 10x15cm</span>
+                <small>2 placas/pág • Múltiplas Folhas</small>
               </button>
-              <button type="button" class="layout-btn-option active" data-layout="2" id="btnLayout2">
-                <span class="layout-num">2</span>
-                <span class="layout-text">2 Placas / A4<br><small>Escala 1:1 Real</small></span>
+              <button type="button" class="print-mode-tab-btn" id="btnModeCompactSheet">
+                <span style="font-size: 1.15rem;">📑</span>
+                <span>Grade Compacta</span>
+                <small>Miniaturas em 1 Folha A4</small>
               </button>
-              <button type="button" class="layout-btn-option" data-layout="4" id="btnLayout4">
-                <span class="layout-num">4</span>
-                <span class="layout-text">4 Placas / A4<br><small>Grade Gráfica</small></span>
-              </button>
+            </div>
+
+            <!-- Opções do Modo Real: 2, 4, 6, 8, 12 ou Quantidade Livre -->
+            <div id="sectionRealSizeOptions">
+              <label class="studio-group-label" style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; margin-bottom: 6px;">
+                Quantidade Total de Placas (10x15 cm)
+              </label>
+              <div class="real-qty-grid">
+                <button type="button" class="qty-btn-option" data-qty="2">2</button>
+                <button type="button" class="qty-btn-option" data-qty="4">4</button>
+                <button type="button" class="qty-btn-option active" data-qty="6">6</button>
+                <button type="button" class="qty-btn-option" data-qty="8">8</button>
+                <button type="button" class="qty-btn-option" data-qty="12">12</button>
+              </div>
+
+              <!-- Input de Quantidade Customizada -->
+              <div class="custom-qty-wrapper">
+                <label for="inputCustomQty" style="font-size: 0.78rem; color: #94A3B8; white-space: nowrap;">Outra quantidade:</label>
+                <input type="number" id="inputCustomQty" class="input-custom-qty" min="1" max="100" value="6" placeholder="Ex: 10">
+                <span id="customQtyPagesHint" style="font-size: 0.75rem; color: #38BDF8; font-weight: 700; margin-left: auto;">= 3 folhas A4</span>
+              </div>
+            </div>
+
+            <!-- Opções do Modo Grade Compacta: 1, 2, 4, 6, 8, 12 na mesma folha -->
+            <div id="sectionCompactSheetOptions" style="display: none;">
+              <label class="studio-group-label" style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; margin-bottom: 6px;">
+                Placas na mesma Folha A4
+              </label>
+              <div class="compact-layout-grid">
+                <button type="button" class="compact-btn-option" data-compact="1">1</button>
+                <button type="button" class="compact-btn-option active" data-compact="2">2</button>
+                <button type="button" class="compact-btn-option" data-compact="4">4</button>
+                <button type="button" class="compact-btn-option" data-compact="6">6</button>
+                <button type="button" class="compact-btn-option" data-compact="8">8</button>
+                <button type="button" class="compact-btn-option" data-compact="12">12</button>
+              </div>
+              <div style="font-size: 0.72rem; color: #94A3B8; margin-top: 6px; line-height: 1.3;">
+                * Ajusta as placas em escala reduzida para caberem todas em 1 única folha A4.
+              </div>
             </div>
           </div>
 

@@ -2512,52 +2512,139 @@ select option {
   color: #FFFFFF;
 }
 
-.layout-selection-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+/* Rolagem e scrollbar estilizada para lista de slots */
+#studioSlotsContainer {
+  max-height: 270px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+#studioSlotsContainer::-webkit-scrollbar {
+  width: 5px;
+}
+#studioSlotsContainer::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 4px;
+}
+#studioSlotsContainer::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.4);
+  border-radius: 4px;
+}
+#studioSlotsContainer::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.7);
 }
 
-.layout-btn-option {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+/* Abas de Modo de Impressão */
+.print-mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.print-mode-tab-btn {
+  padding: 10px 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
   border-radius: 8px;
-  padding: 10px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #94A3B8;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  transition: var(--transition);
+  transition: all 0.2s ease;
   text-align: center;
 }
 
-.layout-btn-option:hover {
+.print-mode-tab-btn small {
+  font-size: 0.68rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.print-mode-tab-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
+  color: #F8FAFC;
 }
 
-.layout-btn-option.active {
+.print-mode-tab-btn.active {
   border-color: #38BDF8;
-  background: rgba(6, 182, 212, 0.15);
-  box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
-}
-
-.layout-num {
-  font-size: 1.2rem;
-  font-weight: 800;
+  background: rgba(6, 182, 212, 0.16);
   color: #38BDF8;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.25);
 }
 
-.layout-text {
-  font-size: 0.72rem;
+/* Grades de Quantidade (Modo Real & Modo Compacto) */
+.real-qty-grid, .compact-layout-grid {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.real-qty-grid {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.compact-layout-grid {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.qty-btn-option, .compact-btn-option {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 4px;
+  font-size: 0.92rem;
+  font-weight: 800;
   color: #CBD5E1;
-  line-height: 1.2;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
 }
 
-.layout-text small {
-  color: var(--text-muted);
-  font-size: 0.65rem;
+.qty-btn-option:hover, .compact-btn-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+}
+
+.qty-btn-option.active, .compact-btn-option.active {
+  border-color: #38BDF8;
+  background: rgba(6, 182, 212, 0.22);
+  color: #38BDF8;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.25);
+}
+
+.custom-qty-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.input-custom-qty {
+  width: 65px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  padding: 4px 6px;
+  font-weight: 700;
+  text-align: center;
+  font-size: 0.88rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.input-custom-qty:focus {
+  border-color: #38BDF8;
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.25);
 }
 
 .studio-actions-stack {
@@ -2661,19 +2748,72 @@ select option {
   background: radial-gradient(circle at 50% 50%, #172033 0%, #0B0F17 100%);
 }
 
-/* A4 Sheet Simulation */
+/* A4 Sheet Simulation & Multi-Page Support */
 .a4-sheet-container {
+  width: 210mm;
+  min-width: 210mm;
+  position: relative;
+  box-sizing: border-box;
+  transform-origin: top center;
+  transition: transform 0.2s ease;
+}
+
+.a4-sheet-container:not(.multi-page) {
+  height: 297mm;
+  min-height: 297mm;
+  max-height: 297mm;
+  background: #FFFFFF;
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.a4-sheet-container.multi-page {
+  background: transparent;
+  box-shadow: none;
+  min-height: auto;
+  height: auto;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 20mm;
+}
+
+.a4-page-sheet {
   width: 210mm;
   min-width: 210mm;
   height: 297mm;
   min-height: 297mm;
+  max-height: 297mm;
   background: #FFFFFF;
   box-shadow: 0 14px 45px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.15);
   position: relative;
   box-sizing: border-box;
   overflow: hidden;
-  transform-origin: top center;
-  transition: transform 0.2s ease;
+  page-break-inside: avoid;
+  page-break-after: always;
+}
+
+.a4-page-indicator-badge {
+  position: absolute;
+  top: 3mm;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38BDF8;
+  font-size: 8pt;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.html2pdf__page-break {
+  page-break-before: always;
+  break-before: page;
 }
 
 .a4-sheet-inner {
@@ -2698,14 +2838,105 @@ select option {
   padding: 10mm 4mm;
 }
 
-.a4-sheet-inner.layout-4 {
+/* Modo Grade Compacta (1 Folha A4) */
+.a4-sheet-inner[class*="layout-compact-"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4mm;
+  width: 100%;
+  height: 100%;
+}
+
+.compact-grid-scale-wrapper {
   display: grid;
-  grid-template-columns: repeat(2, 100mm);
-  grid-template-rows: repeat(2, 145mm);
   justify-content: center;
   align-content: center;
+  margin: auto;
+}
+
+.compact-grid-scale-wrapper.grid-1 {
+  grid-template-columns: 100mm;
+}
+
+.compact-grid-scale-wrapper.grid-2 {
+  grid-template-columns: repeat(2, 100mm);
+  gap: 6mm;
+}
+
+.compact-grid-scale-wrapper.grid-4 {
+  grid-template-columns: repeat(2, 100mm);
+  grid-template-rows: repeat(2, 150mm);
+  gap: 4mm;
+  transform: scale(0.92);
+  transform-origin: center center;
+}
+
+.compact-grid-scale-wrapper.grid-6 {
+  grid-template-columns: repeat(2, 100mm);
+  grid-template-rows: repeat(3, 150mm);
+  gap: 4mm;
+  transform: scale(0.61);
+  transform-origin: center center;
+}
+
+.compact-grid-scale-wrapper.grid-8 {
+  grid-template-columns: repeat(2, 100mm);
+  grid-template-rows: repeat(4, 150mm);
+  gap: 4mm;
+  transform: scale(0.46);
+  transform-origin: center center;
+}
+
+.compact-grid-scale-wrapper.grid-12 {
+  grid-template-columns: repeat(3, 100mm);
+  grid-template-rows: repeat(4, 150mm);
   gap: 3mm;
-  padding: 2mm;
+  transform: scale(0.44);
+  transform-origin: center center;
+}
+
+/* Modo de Exportação PDF & Impressão Direta */
+.pdf-exporting.a4-sheet-container.multi-page {
+  gap: 0 !important;
+}
+.pdf-exporting .a4-page-sheet {
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+.pdf-exporting .a4-page-indicator-badge {
+  display: none !important;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #a4PrintSheet, #a4PrintSheet * {
+    visibility: visible;
+  }
+  #a4PrintSheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    gap: 0 !important;
+  }
+  .a4-page-sheet {
+    box-shadow: none !important;
+    margin: 0 !important;
+    page-break-inside: avoid !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+  .a4-page-indicator-badge {
+    display: none !important;
+  }
 }
 
 /* ========================================================

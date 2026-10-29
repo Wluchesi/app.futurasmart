@@ -529,7 +529,7 @@ app.post('/api/plates/batch-generate', authenticate, async (req, res) => {
     const url = destinationUrl ? destinationUrl.trim() : 'https://google.com';
 
     const created = [];
-    const requestedCount = Math.min(Math.max(parseInt(count, 10) || 1, 1), 16);
+    const requestedCount = Math.min(Math.max(parseInt(count, 10) || 1, 1), 100);
 
     for (let i = 0; i < requestedCount; i++) {
       const code = await db.getNextPlateCode();

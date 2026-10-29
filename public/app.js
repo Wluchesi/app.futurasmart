@@ -1343,15 +1343,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   let studioState = {
     mode: 'existing', // 'existing' por padrão para imprimir a placa cadastrada
-    theme: 'white', // 'white' ou 'black'
-    layout: 2, // 1, 2 ou 4
+    printMode: 'real', // 'real' (Tamanho Real 10x15cm multi-folhas) ou 'compact' (Grade compacta em 1 folha A4)
+    totalQuantity: 6, // Quantidade de placas em modo Real (padrão 6)
+    compactLayout: 2, // 1, 2, 4, 6, 8, 12 placas na folha A4 em modo compacto
+    layout: 6, // mantido para compatibilidade
+    theme: 'white', // 'white' ou 'black' (sem dourado ou azul)
     showCropMarks: true,
     nextCode: 'PI-121',
     zoom: 0.6,
     selectedPlateId: null,
-    slotPlateIds: [], // Array de IDs de placas para cada posição na folha A4
+    slotPlateIds: [], // Array de IDs de placas para cada posição
     slotThemes: [] // Array de temas para cada posição ('white' ou 'black')
   };
+
+  function getEffectivePlateCount() {
+    if (studioState.printMode === 'real') {
+      const q = parseInt(studioState.totalQuantity, 10);
+      return (isNaN(q) || q < 1) ? 2 : Math.min(q, 100);
+    } else {
+      const c = parseInt(studioState.compactLayout, 10);
+      return (isNaN(c) || c < 1) ? 2 : Math.min(c, 12);
+    }
+  }
 
   function setupStudioEventListeners() {
     if (btnOpenPrintStudio) {
@@ -1374,10 +1387,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnRepeatFirstPlate = document.getElementById('btnRepeatFirstPlate');
     if (btnRepeatFirstPlate) {
       btnRepeatFirstPlate.addEventListener('click', () => {
+        const count = getEffectivePlateCount();
         const firstId = studioState.slotPlateIds[0] || studioState.selectedPlateId || (state.plates[0] && state.plates[0].id);
         const firstTheme = (studioState.slotThemes && studioState.slotThemes[0]) || studioState.theme || 'white';
         if (!firstId) return;
-        for (let i = 0; i < studioState.layout; i++) {
+        for (let i = 0; i < count; i++) {
           studioState.slotPlateIds[i] = firstId;
           studioState.slotThemes[i] = firstTheme;
         }
@@ -1409,13 +1423,14 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Seleção de Tema Global (Branco vs Preto)
+    // Seleção de Tema Global (⚪ Branco vs ⚫ Preto)
     if (btnThemeWhite && btnThemeBlack) {
       btnThemeWhite.addEventListener('click', () => {
         studioState.theme = 'white';
         btnThemeWhite.classList.add('active');
         btnThemeBlack.classList.remove('active');
-        for (let i = 0; i < studioState.layout; i++) {
+        const count = getEffectivePlateCount();
+        for (let i = 0; i < count; i++) {
           studioState.slotThemes[i] = 'white';
         }
         renderSlotSelectors();
@@ -1426,7 +1441,8 @@ document.addEventListener('DOMContentLoaded', () => {
         studioState.theme = 'black';
         btnThemeBlack.classList.add('active');
         btnThemeWhite.classList.remove('active');
-        for (let i = 0; i < studioState.layout; i++) {
+        const count = getEffectivePlateCount();
+        for (let i = 0; i < count; i++) {
           studioState.slotThemes[i] = 'black';
         }
         renderSlotSelectors();
@@ -1434,23 +1450,90 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Seleção de Layout (1, 2 ou 4 placas por folha)
-    const layoutBtns = [
-      { el: btnLayout1, val: 1 },
-      { el: btnLayout2, val: 2 },
-      { el: btnLayout4, val: 4 }
-    ];
+    // Alternância de Formato de Impressão (Tamanho Real vs Grade Compacta)
+    const btnModeRealSize = document.getElementById('btnModeRealSize');
+    const btnModeCompactSheet = document.getElementById('btnModeCompactSheet');
+    const sectionRealSizeOptions = document.getElementById('sectionRealSizeOptions');
+    const sectionCompactSheetOptions = document.getElementById('sectionCompactSheetOptions');
+    const inputCustomQty = document.getElementById('inputCustomQty');
+    const customQtyPagesHint = document.getElementById('customQtyPagesHint');
 
-    layoutBtns.forEach(({ el, val }) => {
-      if (el) {
-        el.addEventListener('click', () => {
-          layoutBtns.forEach(b => b.el && b.el.classList.remove('active'));
-          el.classList.add('active');
-          studioState.layout = val;
-          renderSlotSelectors();
-          renderStudioSheet();
+    function updatePagesHint() {
+      if (!customQtyPagesHint) return;
+      const q = parseInt(inputCustomQty?.value, 10) || studioState.totalQuantity || 2;
+      const pages = Math.ceil(q / 2);
+      customQtyPagesHint.textContent = `= ${pages} folha${pages > 1 ? 's' : ''} A4`;
+    }
+
+    if (btnModeRealSize && btnModeCompactSheet) {
+      btnModeRealSize.addEventListener('click', () => {
+        studioState.printMode = 'real';
+        btnModeRealSize.classList.add('active');
+        btnModeCompactSheet.classList.remove('active');
+        if (sectionRealSizeOptions) sectionRealSizeOptions.style.display = 'block';
+        if (sectionCompactSheetOptions) sectionCompactSheetOptions.style.display = 'none';
+        renderSlotSelectors();
+        renderStudioSheet();
+      });
+
+      btnModeCompactSheet.addEventListener('click', () => {
+        studioState.printMode = 'compact';
+        btnModeCompactSheet.classList.add('active');
+        btnModeRealSize.classList.remove('active');
+        if (sectionRealSizeOptions) sectionRealSizeOptions.style.display = 'none';
+        if (sectionCompactSheetOptions) sectionCompactSheetOptions.style.display = 'block';
+        renderSlotSelectors();
+        renderStudioSheet();
+      });
+    }
+
+    // Botões de quantidade no modo real (2, 4, 6, 8, 12)
+    document.querySelectorAll('.qty-btn-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.qty-btn-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const qty = parseInt(btn.getAttribute('data-qty'), 10) || 6;
+        studioState.totalQuantity = qty;
+        if (inputCustomQty) inputCustomQty.value = qty;
+        updatePagesHint();
+        renderSlotSelectors();
+        renderStudioSheet();
+      });
+    });
+
+    // Input livre de quantidade no modo real
+    if (inputCustomQty) {
+      inputCustomQty.addEventListener('input', (e) => {
+        let val = parseInt(e.target.value, 10);
+        if (isNaN(val) || val < 1) val = 1;
+        if (val > 100) val = 100;
+        studioState.totalQuantity = val;
+
+        // Atualiza estado ativo dos botões predefinidos
+        document.querySelectorAll('.qty-btn-option').forEach(b => {
+          if (parseInt(b.getAttribute('data-qty'), 10) === val) {
+            b.classList.add('active');
+          } else {
+            b.classList.remove('active');
+          }
         });
-      }
+
+        updatePagesHint();
+        renderSlotSelectors();
+        renderStudioSheet();
+      });
+    }
+
+    // Botões de grade no modo compacto (1, 2, 4, 6, 8, 12)
+    document.querySelectorAll('.compact-btn-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.compact-btn-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const count = parseInt(btn.getAttribute('data-compact'), 10) || 2;
+        studioState.compactLayout = count;
+        renderSlotSelectors();
+        renderStudioSheet();
+      });
     });
 
     // Toggle de marcas de corte
@@ -1511,25 +1594,25 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getSlotLabels(count) {
-    if (count === 1) {
-      return ['Posição Central'];
+    const labels = [];
+    for (let i = 1; i <= count; i++) {
+      if (studioState.printMode === 'real') {
+        const pageNum = Math.ceil(i / 2);
+        const pos = (i % 2 === 1) ? 'Esquerda' : 'Direita';
+        labels.push(`Pág ${pageNum} • ${pos}`);
+      } else {
+        labels.push(`Posição ${i}`);
+      }
     }
-    if (count === 2) {
-      return ['Placa 1 (Esquerda / Superior)', 'Placa 2 (Direita / Inferior)'];
-    }
-    return [
-      'Placa 1 (Topo Esquerdo)',
-      'Placa 2 (Topo Direito)',
-      'Placa 3 (Base Esquerda)',
-      'Placa 4 (Base Direita)'
-    ];
+    return labels;
   }
 
   function renderSlotSelectors() {
     const container = document.getElementById('studioSlotsContainer');
     if (!container) return;
 
-    const count = studioState.layout;
+    const count = getEffectivePlateCount();
+    studioState.layout = count;
     const labels = getSlotLabels(count);
 
     if (!Array.isArray(studioState.slotPlateIds)) {
@@ -1546,7 +1629,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Preenche slots subsequentes com placas diferentes se houver e temas padrão
     for (let i = 0; i < count; i++) {
       if (!studioState.slotPlateIds[i]) {
-        const candidate = state.plates[i] || state.plates[0];
+        const candidate = state.plates[i % (state.plates.length || 1)] || state.plates[0];
         studioState.slotPlateIds[i] = candidate ? candidate.id : '';
       }
       if (!studioState.slotThemes[i]) {
@@ -1637,6 +1720,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function openPrintStudioModal(targetPlateId) {
     await fetchNextPlateCode();
+    const count = getEffectivePlateCount();
 
     if (targetPlateId) {
       studioState.selectedPlateId = targetPlateId;
@@ -1644,8 +1728,8 @@ document.addEventListener('DOMContentLoaded', () => {
       studioState.slotThemes = [studioState.theme || 'white'];
       // Preenche os outros slots com as demais placas existentes
       const others = state.plates.filter(p => String(p.id) !== String(targetPlateId));
-      for (let i = 1; i < studioState.layout; i++) {
-        studioState.slotPlateIds[i] = others[i - 1]?.id || targetPlateId;
+      for (let i = 1; i < count; i++) {
+        studioState.slotPlateIds[i] = others[(i - 1) % (others.length || 1)]?.id || targetPlateId;
         studioState.slotThemes[i] = studioState.theme || 'white';
       }
       studioState.mode = 'existing';
@@ -1656,8 +1740,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!Array.isArray(studioState.slotPlateIds) || studioState.slotPlateIds.length === 0) {
         studioState.slotPlateIds = [];
         studioState.slotThemes = [];
-        for (let i = 0; i < studioState.layout; i++) {
-          studioState.slotPlateIds[i] = state.plates[i]?.id || state.plates[0]?.id;
+        for (let i = 0; i < count; i++) {
+          studioState.slotPlateIds[i] = state.plates[i % (state.plates.length || 1)]?.id || state.plates[0]?.id;
           studioState.slotThemes[i] = studioState.theme || 'white';
         }
       }
@@ -1917,30 +2001,29 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderStudioSheet() {
     if (!a4SheetInner) return;
 
-    const count = studioState.layout;
-    a4SheetInner.className = `a4-sheet-inner layout-${count}`;
+    const count = getEffectivePlateCount();
+    studioState.layout = count;
 
-    let cardsHtml = '';
+    let cardsData = [];
 
     if (studioState.mode === 'batch') {
       const baseNumStr = studioState.nextCode.replace('PI-', '');
       let baseNum = parseInt(baseNumStr, 10);
       if (isNaN(baseNum)) baseNum = 121;
 
-      if (canvasPlatesSummary) {
-        canvasPlatesSummary.textContent = `Novo Lote (${studioState.nextCode}...) • ${count} Placa(s) na Folha (10x15cm)`;
-      }
-
       for (let i = 0; i < count; i++) {
         const currentCode = `PI-${baseNum + i}`;
         const currentSlug = `pi-${baseNum + i}`;
         const slotTheme = (studioState.slotThemes && studioState.slotThemes[i]) || studioState.theme || 'white';
-        cardsHtml += renderPlateCardHtml({
-          code: currentCode,
-          slug: currentSlug,
-          name: `Placa Inteligente ${currentCode}`,
-          type: 'google'
-        }, slotTheme, studioState.showCropMarks);
+        cardsData.push({
+          plate: {
+            code: currentCode,
+            slug: currentSlug,
+            name: `Placa Inteligente ${currentCode}`,
+            type: 'google'
+          },
+          theme: slotTheme
+        });
       }
     } else {
       // Modo de placas existentes (padrão)
@@ -1948,44 +2031,75 @@ document.addEventListener('DOMContentLoaded', () => {
         studioState.slotPlateIds = [];
       }
 
-      const distinctNames = [];
-      const distinctPlates = [];
-
       for (let i = 0; i < count; i++) {
         const targetId = studioState.slotPlateIds[i] || studioState.selectedPlateId;
         const plate = state.plates.find(p => String(p.id) === String(targetId)) || state.plates[i % (state.plates.length || 1)];
         const slotTheme = (studioState.slotThemes && studioState.slotThemes[i]) || studioState.theme || 'white';
         if (plate) {
-          distinctPlates.push(plate);
-          if (!distinctNames.includes(plate.name)) {
-            distinctNames.push(plate.name);
-          }
-          cardsHtml += renderPlateCardHtml(plate, slotTheme, studioState.showCropMarks);
+          cardsData.push({ plate, theme: slotTheme });
         }
-      }
-
-      if (canvasPlatesSummary) {
-        if (distinctNames.length === 1) {
-          canvasPlatesSummary.textContent = `${distinctNames[0]} • ${count} cópia(s) na Folha (10x15cm)`;
-        } else if (distinctNames.length > 1) {
-          canvasPlatesSummary.textContent = `${distinctNames.join(' + ')} • ${count} Placas na Folha (10x15cm)`;
-        } else {
-          canvasPlatesSummary.textContent = `${count} Placa(s) na Folha (10x15cm)`;
-        }
-      }
-
-      if (distinctPlates.length === 0) {
-        cardsHtml = `<div style="padding: 40px; text-align: center; color: #94a3b8; font-size: 1rem; width: 100%;">
-          Nenhuma placa cadastrada encontrada. Cadastre uma placa primeiro ou alterne para o modo "Gerar Novo Lote".
-        </div>`;
       }
     }
 
-    a4SheetInner.innerHTML = cardsHtml;
+    if (cardsData.length === 0) {
+      a4PrintSheet.className = 'a4-sheet-container';
+      a4PrintSheet.innerHTML = `<div style="padding: 40px; text-align: center; color: #94a3b8; font-size: 1rem; width: 100%;">
+        Nenhuma placa cadastrada encontrada. Cadastre uma placa primeiro ou alterne para o modo "Gerar Novo Lote".
+      </div>`;
+      if (canvasPlatesSummary) canvasPlatesSummary.textContent = 'Nenhuma placa selecionada';
+      return;
+    }
+
+    if (studioState.printMode === 'real') {
+      // Modo Tamanho Real 10x15cm (2 placas por folha A4 em escala 1:1)
+      const totalPages = Math.ceil(count / 2);
+      a4PrintSheet.className = totalPages > 1 ? 'a4-sheet-container multi-page' : 'a4-sheet-container';
+
+      if (canvasPlatesSummary) {
+        canvasPlatesSummary.textContent = `${count} Placa(s) Real (10x15cm) • ${totalPages} Folha(s) A4`;
+      }
+
+      let sheetsHtml = '';
+      for (let p = 0; p < totalPages; p++) {
+        const pageCards = cardsData.slice(p * 2, p * 2 + 2);
+        const pageCardsHtml = pageCards.map(c => renderPlateCardHtml(c.plate, c.theme, studioState.showCropMarks)).join('');
+
+        sheetsHtml += `
+          <div class="a4-page-sheet" data-page="${p + 1}">
+            <div class="a4-page-indicator-badge">Folha ${p + 1} de ${totalPages} • Tamanho Real 10x15cm (1:1)</div>
+            <div class="a4-sheet-inner layout-2">
+              ${pageCardsHtml}
+            </div>
+          </div>
+        `;
+        if (p < totalPages - 1) {
+          sheetsHtml += '<div class="html2pdf__page-break"></div>';
+        }
+      }
+      a4PrintSheet.innerHTML = sheetsHtml;
+    } else {
+      // Modo Grade Compacta (1 única folha A4)
+      a4PrintSheet.className = 'a4-sheet-container';
+
+      if (canvasPlatesSummary) {
+        canvasPlatesSummary.textContent = `${count} Placa(s) Compacta(s) na Folha A4`;
+      }
+
+      const allCardsHtml = cardsData.map(c => renderPlateCardHtml(c.plate, c.theme, studioState.showCropMarks)).join('');
+      a4PrintSheet.innerHTML = `
+        <div class="a4-page-sheet layout-compact" data-page="1">
+          <div class="a4-sheet-inner layout-compact-${count}">
+            <div class="compact-grid-scale-wrapper grid-${count}">
+              ${allCardsHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }
 
     // Se QRCode client-side estiver disponível, gera Data URLs locais em altíssima definição (instantâneo e sem CORS para html2pdf)
     if (window.QRCode && window.QRCode.toDataURL) {
-      const qrImgs = a4SheetInner.querySelectorAll('.qr-code-rendered-img');
+      const qrImgs = a4PrintSheet.querySelectorAll('.qr-code-rendered-img');
       qrImgs.forEach(async (img) => {
         const slug = img.getAttribute('data-slug');
         if (!slug) return;
@@ -2020,6 +2134,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       showToast('Processando e gerando PDF para gráfica em 300 DPI...');
 
+      const count = getEffectivePlateCount();
+
       // Se estiver no modo lote, persiste no banco para ativar os links e os chips NFC
       if (studioState.mode === 'batch') {
         const destinationUrl = studioBatchDestination?.value?.trim() || 'https://google.com';
@@ -2029,7 +2145,7 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            count: studioState.layout,
+            count: count,
             destinationUrl,
             assignedUserId,
             type: 'google'
@@ -2046,7 +2162,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let fileSuffix = studioState.theme;
       if (studioState.mode === 'existing') {
         const distinctSlugs = [];
-        for (let i = 0; i < studioState.layout; i++) {
+        for (let i = 0; i < count; i++) {
           const targetId = studioState.slotPlateIds[i] || studioState.selectedPlateId;
           const p = state.plates.find(pl => String(pl.id) === String(targetId));
           const t = (studioState.slotThemes && studioState.slotThemes[i]) || studioState.theme;
@@ -2057,13 +2173,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         }
-        fileSuffix = distinctSlugs.length > 0 ? distinctSlugs.join('_') : studioState.theme;
+        fileSuffix = distinctSlugs.length > 0 ? distinctSlugs.slice(0, 3).join('_') : studioState.theme;
       }
+
+      const modePrefix = studioState.printMode === 'real' ? `${count}placas-tamanho-real` : `${count}placas-grade-compacta`;
 
       // Prepara opções do html2pdf para escala exata A4 sem distorção
       const opt = {
         margin: 0,
-        filename: `folha-grafica-a4-${fileSuffix}.pdf`,
+        filename: `folha-grafica-a4-${modePrefix}-${fileSuffix}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 3, // 300 DPI real
@@ -2076,16 +2194,19 @@ document.addEventListener('DOMContentLoaded', () => {
           unit: 'mm',
           format: 'a4',
           orientation: 'portrait'
-        }
+        },
+        pagebreak: { mode: ['css', 'legacy'] }
       };
 
-      // Reseta zoom temporariamente para renderizar em 100% no canvas do PDF
+      // Reseta zoom temporariamente e adiciona classe para exportação sem sombras e sem margens adicionais
       const currentTransform = a4PrintSheet.style.transform;
       a4PrintSheet.style.transform = 'scale(1)';
+      a4PrintSheet.classList.add('pdf-exporting');
 
       await html2pdf().set(opt).from(a4PrintSheet).save();
 
       // Restaura zoom da interface
+      a4PrintSheet.classList.remove('pdf-exporting');
       a4PrintSheet.style.transform = currentTransform;
 
       showToast('PDF para gráfica baixado com sucesso!');
