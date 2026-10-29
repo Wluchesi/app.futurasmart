@@ -27,6 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const userNameHeader = document.getElementById('userNameHeader');
   const userRoleBadge = document.getElementById('userRoleBadge');
   const btnLogout = document.getElementById('btnLogout');
+  const btnMobileMenuToggle = document.getElementById('btnMobileMenuToggle');
+  const headerMenuNav = document.getElementById('headerMenuNav');
+  const mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
 
   // DOM Elements - Main View Navigation Tabs
   const navTabDashboard = document.getElementById('navTabDashboard');
@@ -729,6 +732,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnTestNfc.addEventListener('click', () => simulateScan('nfc'));
     btnTestQr.addEventListener('click', () => simulateScan('qr'));
+
+    // Mobile Menu Sanduíche Toggle
+    function toggleMobileMenu() {
+      if (!headerMenuNav) return;
+      const isOpen = headerMenuNav.classList.contains('is-open');
+      if (isOpen) {
+        closeMobileMenu();
+      } else {
+        openMobileMenu();
+      }
+    }
+
+    function openMobileMenu() {
+      if (!headerMenuNav) return;
+      headerMenuNav.classList.add('is-open');
+      if (btnMobileMenuToggle) btnMobileMenuToggle.classList.add('is-active');
+      if (mobileMenuBackdrop) mobileMenuBackdrop.classList.add('is-active');
+    }
+
+    function closeMobileMenu() {
+      if (!headerMenuNav) return;
+      headerMenuNav.classList.remove('is-open');
+      if (btnMobileMenuToggle) btnMobileMenuToggle.classList.remove('is-active');
+      if (mobileMenuBackdrop) mobileMenuBackdrop.classList.remove('is-active');
+    }
+
+    if (btnMobileMenuToggle) {
+      btnMobileMenuToggle.addEventListener('click', toggleMobileMenu);
+    }
+    if (mobileMenuBackdrop) {
+      mobileMenuBackdrop.addEventListener('click', closeMobileMenu);
+    }
+    if (headerMenuNav) {
+      headerMenuNav.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', closeMobileMenu);
+      });
+    }
 
     // Logs Drawer
     btnOpenLogs.addEventListener('click', openLogsDrawer);
