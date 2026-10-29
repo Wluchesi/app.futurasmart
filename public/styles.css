@@ -2318,6 +2318,48 @@ select option {
   box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
 }
 
+.studio-slot-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  padding: 8px 10px;
+  transition: var(--transition);
+}
+
+.studio-slot-item:hover {
+  border-color: rgba(6, 182, 212, 0.35);
+  background: rgba(30, 41, 59, 0.75);
+}
+
+.studio-slot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.studio-slot-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #CBD5E1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.studio-slot-badge {
+  background: rgba(6, 182, 212, 0.25);
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  color: #38BDF8;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+
 .theme-selection-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

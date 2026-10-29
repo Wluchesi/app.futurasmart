@@ -1333,7 +1333,8 @@ document.addEventListener('DOMContentLoaded', () => {
     showCropMarks: true,
     nextCode: 'PI-121',
     zoom: 0.6,
-    selectedPlateId: null
+    selectedPlateId: null,
+    slotPlateIds: [] // Array de IDs de placas para cada posição na folha A4
   };
 
   function setupStudioEventListeners() {
@@ -1350,6 +1351,21 @@ document.addEventListener('DOMContentLoaded', () => {
           closeStudioModal();
           openPrintStudioModalWithPlate(plate.id);
         }
+      });
+    }
+
+    // Botão de replicar a 1ª placa em todos os slots
+    const btnRepeatFirstPlate = document.getElementById('btnRepeatFirstPlate');
+    if (btnRepeatFirstPlate) {
+      btnRepeatFirstPlate.addEventListener('click', () => {
+        const firstId = studioState.slotPlateIds[0] || studioState.selectedPlateId || (state.plates[0] && state.plates[0].id);
+        if (!firstId) return;
+        for (let i = 0; i < studioState.layout; i++) {
+          studioState.slotPlateIds[i] = firstId;
+        }
+        renderSlotSelectors();
+        renderStudioSheet();
+        showToast('Primeira placa replicada em todos os slots da folha!');
       });
     }
 
@@ -1370,6 +1386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tabModeBatch.classList.remove('active');
         sectionBatchConfig.style.display = 'none';
         sectionExistingConfig.style.display = 'block';
+        renderSlotSelectors();
         renderStudioSheet();
       });
     }
@@ -1404,6 +1421,7 @@ document.addEventListener('DOMContentLoaded', () => {
           layoutBtns.forEach(b => b.el && b.el.classList.remove('active'));
           el.classList.add('active');
           studioState.layout = val;
+          renderSlotSelectors();
           renderStudioSheet();
         });
       }
@@ -1466,14 +1484,110 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function getSlotLabels(count) {
+    if (count === 1) {
+      return ['Posição Central'];
+    }
+    if (count === 2) {
+      return ['Placa 1 (Esquerda / Superior)', 'Placa 2 (Direita / Inferior)'];
+    }
+    return [
+      'Placa 1 (Topo Esquerdo)',
+      'Placa 2 (Topo Direito)',
+      'Placa 3 (Base Esquerda)',
+      'Placa 4 (Base Direita)'
+    ];
+  }
+
+  function renderSlotSelectors() {
+    const container = document.getElementById('studioSlotsContainer');
+    if (!container) return;
+
+    const count = studioState.layout;
+    const labels = getSlotLabels(count);
+
+    if (!Array.isArray(studioState.slotPlateIds)) {
+      studioState.slotPlateIds = [];
+    }
+
+    if (!studioState.slotPlateIds[0] && state.plates.length > 0) {
+      studioState.slotPlateIds[0] = studioState.selectedPlateId || state.plates[0].id;
+    }
+
+    // Preenche slots subsequentes com placas diferentes se houver
+    for (let i = 0; i < count; i++) {
+      if (!studioState.slotPlateIds[i]) {
+        const candidate = state.plates[i] || state.plates[0];
+        studioState.slotPlateIds[i] = candidate ? candidate.id : '';
+      }
+    }
+
+    studioState.slotPlateIds = studioState.slotPlateIds.slice(0, count);
+
+    container.innerHTML = labels.map((label, index) => {
+      const currentSelectedId = studioState.slotPlateIds[index] || '';
+      const optionsHtml = state.plates.map(p => {
+        const isSelected = String(p.id) === String(currentSelectedId);
+        return `<option value="${p.id}" ${isSelected ? 'selected' : ''}>
+          ${p.code ? '[' + p.code + '] ' : ''}${escapeHtml(p.name)} (${escapeHtml(p.slug)})
+        </option>`;
+      }).join('') || '<option value="">Nenhuma placa cadastrada</option>';
+
+      return `
+        <div class="studio-slot-item">
+          <div class="studio-slot-header">
+            <span class="studio-slot-label">
+              <span class="studio-slot-badge">Slot ${index + 1}</span>
+              ${label}
+            </span>
+          </div>
+          <select class="studio-select slot-plate-select" data-slot="${index}">
+            ${optionsHtml}
+          </select>
+        </div>
+      `;
+    }).join('');
+
+    // Listener para mudanças em cada slot individual
+    container.querySelectorAll('.slot-plate-select').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const slotIdx = parseInt(e.target.getAttribute('data-slot'), 10);
+        studioState.slotPlateIds[slotIdx] = e.target.value;
+        if (slotIdx === 0) {
+          studioState.selectedPlateId = e.target.value;
+        }
+        renderStudioSheet();
+      });
+    });
+
+    const btnRepeat = document.getElementById('btnRepeatFirstPlate');
+    if (btnRepeat) {
+      btnRepeat.style.display = count > 1 ? 'inline-flex' : 'none';
+    }
+  }
+
   async function openPrintStudioModal(targetPlateId) {
     await fetchNextPlateCode();
 
     if (targetPlateId) {
       studioState.selectedPlateId = targetPlateId;
+      studioState.slotPlateIds = [targetPlateId];
+      // Preenche os outros slots com as demais placas existentes
+      const others = state.plates.filter(p => String(p.id) !== String(targetPlateId));
+      for (let i = 1; i < studioState.layout; i++) {
+        studioState.slotPlateIds[i] = others[i - 1]?.id || targetPlateId;
+      }
       studioState.mode = 'existing';
-    } else if (!studioState.selectedPlateId && state.plates.length > 0) {
-      studioState.selectedPlateId = state.lastCreatedPlateId || state.plates[0].id;
+    } else {
+      if (!studioState.selectedPlateId && state.plates.length > 0) {
+        studioState.selectedPlateId = state.lastCreatedPlateId || state.plates[0].id;
+      }
+      if (!Array.isArray(studioState.slotPlateIds) || studioState.slotPlateIds.length === 0) {
+        studioState.slotPlateIds = [];
+        for (let i = 0; i < studioState.layout; i++) {
+          studioState.slotPlateIds[i] = state.plates[i]?.id || state.plates[0]?.id;
+        }
+      }
     }
 
     // Atualiza estado visual das abas de acordo com o modo
@@ -1498,18 +1612,8 @@ document.addEventListener('DOMContentLoaded', () => {
       `).join('') || `<option value="${state.currentUser?.id}">Você mesmo (${state.currentUser?.name})</option>`;
     }
 
-    // Popula dropdown de placas existentes
-    if (studioSelectExistingPlates) {
-      studioSelectExistingPlates.innerHTML = state.plates.map(p => `
-        <option value="${p.id}" ${String(p.id) === String(studioState.selectedPlateId) ? 'selected' : ''}>
-          ${p.code ? '[' + p.code + '] ' : ''}${escapeHtml(p.name)} (${escapeHtml(p.slug)})
-        </option>
-      `).join('') || '<option value="">Nenhuma placa cadastrada</option>';
-
-      if (studioState.selectedPlateId) {
-        studioSelectExistingPlates.value = studioState.selectedPlateId;
-      }
-    }
+    // Renderiza seletores individuais para cada slot da folha A4
+    renderSlotSelectors();
 
     // Aplica zoom inicial
     if (a4PrintSheet) {
@@ -1761,19 +1865,36 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } else {
       // Modo de placas existentes (padrão)
-      const plate = state.plates.find(p => String(p.id) === String(studioState.selectedPlateId)) || state.plates[0];
-
-      if (canvasPlatesSummary) {
-        canvasPlatesSummary.textContent = plate 
-          ? `[${plate.code || 'PI'}] ${plate.name} • ${count} cópia(s) na Folha (10x15cm)`
-          : `${count} Placa(s) na Folha (10x15cm)`;
+      if (!Array.isArray(studioState.slotPlateIds)) {
+        studioState.slotPlateIds = [];
       }
 
-      if (plate) {
-        for (let i = 0; i < count; i++) {
+      const distinctNames = [];
+      const distinctPlates = [];
+
+      for (let i = 0; i < count; i++) {
+        const targetId = studioState.slotPlateIds[i] || studioState.selectedPlateId;
+        const plate = state.plates.find(p => String(p.id) === String(targetId)) || state.plates[i % (state.plates.length || 1)];
+        if (plate) {
+          distinctPlates.push(plate);
+          if (!distinctNames.includes(plate.name)) {
+            distinctNames.push(plate.name);
+          }
           cardsHtml += renderPlateCardHtml(plate, studioState.theme, studioState.showCropMarks);
         }
-      } else {
+      }
+
+      if (canvasPlatesSummary) {
+        if (distinctNames.length === 1) {
+          canvasPlatesSummary.textContent = `${distinctNames[0]} • ${count} cópia(s) na Folha (10x15cm)`;
+        } else if (distinctNames.length > 1) {
+          canvasPlatesSummary.textContent = `${distinctNames.join(' + ')} • ${count} Placas na Folha (10x15cm)`;
+        } else {
+          canvasPlatesSummary.textContent = `${count} Placa(s) na Folha (10x15cm)`;
+        }
+      }
+
+      if (distinctPlates.length === 0) {
         cardsHtml = `<div style="padding: 40px; text-align: center; color: #94a3b8; font-size: 1rem; width: 100%;">
           Nenhuma placa cadastrada encontrada. Cadastre uma placa primeiro ou alterne para o modo "Gerar Novo Lote".
         </div>`;
@@ -1839,8 +1960,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let fileSuffix = studioState.theme;
       if (studioState.mode === 'existing') {
-        const p = state.plates.find(pl => String(pl.id) === String(studioState.selectedPlateId));
-        if (p) fileSuffix = `${p.slug}-${studioState.theme}`;
+        const distinctSlugs = [];
+        for (let i = 0; i < studioState.layout; i++) {
+          const targetId = studioState.slotPlateIds[i] || studioState.selectedPlateId;
+          const p = state.plates.find(pl => String(pl.id) === String(targetId));
+          if (p && !distinctSlugs.includes(p.slug)) {
+            distinctSlugs.push(p.slug);
+          }
+        }
+        fileSuffix = distinctSlugs.length > 0 ? `${distinctSlugs.join('-')}-${studioState.theme}` : studioState.theme;
       }
 
       // Prepara opções do html2pdf para escala exata A4 sem distorção
