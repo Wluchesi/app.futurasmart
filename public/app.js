@@ -567,6 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="plate-name">
                   ${escapeHtml(plate.name)}
                   ${plate.code ? `<span class="badge-plate-code" style="margin-left:6px; font-size:0.75rem; background:rgba(6,182,212,0.18); color:#38BDF8; border:1px solid rgba(6,182,212,0.4); padding:2px 7px; border-radius:6px; font-weight:700;">${escapeHtml(plate.code)}</span>` : ''}
+                  <span class="plate-color-badge badge-color-${plate.theme === 'black' ? 'black' : 'white'}">${plate.theme === 'black' ? '⚫ Preto' : '⚪ Branco'}</span>
                 </div>
                 <span class="plate-location-badge">📍 ${escapeHtml(plate.location || 'Geral')}</span>
                 ${ownerBadge}
@@ -902,6 +903,14 @@ document.addEventListener('DOMContentLoaded', () => {
       batchCount.addEventListener('input', updateBatchPreviewRange);
     }
 
+    // Seletor de Tema/Cor nos Modais
+    document.querySelectorAll('input[name="formPlateTheme"]').forEach(input => {
+      input.addEventListener('change', () => setFormPlateTheme(input.value));
+    });
+    document.querySelectorAll('input[name="batchPlateTheme"]').forEach(input => {
+      input.addEventListener('change', () => setBatchPlateTheme(input.value));
+    });
+
     btnClosePlateModal.addEventListener('click', closePlateModal);
     btnCancelPlate.addEventListener('click', closePlateModal);
 
@@ -1003,6 +1012,30 @@ document.addEventListener('DOMContentLoaded', () => {
     adminChangePasswordForm.addEventListener('submit', handleAdminSavePassword);
   }
 
+  function setFormPlateTheme(theme) {
+    const isWhite = theme !== 'black';
+    const radWhite = document.querySelector('input[name="formPlateTheme"][value="white"]');
+    const radBlack = document.querySelector('input[name="formPlateTheme"][value="black"]');
+    const lblWhite = document.getElementById('labelPlateThemeWhite');
+    const lblBlack = document.getElementById('labelPlateThemeBlack');
+    if (radWhite) radWhite.checked = isWhite;
+    if (radBlack) radBlack.checked = !isWhite;
+    if (lblWhite) lblWhite.classList.toggle('active', isWhite);
+    if (lblBlack) lblBlack.classList.toggle('active', !isWhite);
+  }
+
+  function setBatchPlateTheme(theme) {
+    const isWhite = theme !== 'black';
+    const radWhite = document.querySelector('input[name="batchPlateTheme"][value="white"]');
+    const radBlack = document.querySelector('input[name="batchPlateTheme"][value="black"]');
+    const lblWhite = document.getElementById('labelBatchThemeWhite');
+    const lblBlack = document.getElementById('labelBatchThemeBlack');
+    if (radWhite) radWhite.checked = isWhite;
+    if (radBlack) radBlack.checked = !isWhite;
+    if (lblWhite) lblWhite.classList.toggle('active', isWhite);
+    if (lblBlack) lblBlack.classList.toggle('active', !isWhite);
+  }
+
   // ==========================================
   // MODAL HANDLERS (CREATE / EDIT PLACA)
   // ==========================================
@@ -1015,6 +1048,7 @@ document.addEventListener('DOMContentLoaded', () => {
     formSlug.value = '';
     delete formSlug.dataset.manualEdit;
     formIsActive.checked = true;
+    setFormPlateTheme('white');
 
     // Se admin, permite escolher usuário dono
     if (state.currentUser?.role === 'admin') {
@@ -1042,6 +1076,7 @@ document.addEventListener('DOMContentLoaded', () => {
     formDestination.value = plate.destinationUrl;
     formSlug.value = plate.slug;
     formIsActive.checked = plate.isActive;
+    setFormPlateTheme(plate.theme || 'white');
 
     if (state.currentUser?.role === 'admin') {
       groupAssignUser.style.display = 'block';
@@ -1088,6 +1123,7 @@ document.addEventListener('DOMContentLoaded', () => {
       batchCount.value = 10;
     }
     updateBatchPreviewRange();
+    setBatchPlateTheme('white');
 
     // Popula usuários no select do lote
     if (batchModalAssignUser) {
@@ -1117,6 +1153,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const type = batchPlateType.value || 'google';
     const assignedUserId = batchModalAssignUser ? batchModalAssignUser.value : undefined;
     const location = document.getElementById('batchLocation')?.value?.trim() || 'Balcão';
+    const batchThemeRadio = document.querySelector('input[name="batchPlateTheme"]:checked');
+    const theme = batchThemeRadio ? batchThemeRadio.value : 'white';
 
     btnSubmitBatchCreate.disabled = true;
     const originalText = btnSubmitBatchCreate.innerHTML;
@@ -1131,6 +1169,7 @@ document.addEventListener('DOMContentLoaded', () => {
           startCode,
           destinationUrl,
           type,
+          theme,
           assignedUserId,
           location
         })
@@ -1160,10 +1199,14 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
 
     const id = formPlateId.value;
+    const themeRadio = document.querySelector('input[name="formPlateTheme"]:checked');
+    const selectedTheme = themeRadio ? themeRadio.value : 'white';
+
     const payload = {
       name: formName.value.trim(),
       location: formLocation.value.trim(),
       type: formType.value,
+      theme: selectedTheme,
       destinationUrl: formDestination.value.trim(),
       slug: formSlug.value.trim(),
       isActive: formIsActive.checked,
@@ -2185,6 +2228,18 @@ document.addEventListener('DOMContentLoaded', () => {
   async function openPrintStudioModalWithPlate(plateId) {
     studioState.mode = 'existing';
     studioState.selectedPlateId = plateId;
+    const plate = state.plates.find(p => p.id === plateId);
+    if (plate && plate.theme) {
+      studioState.theme = plate.theme;
+      if (btnThemeWhite && btnThemeBlack) {
+        btnThemeWhite.classList.toggle('active', plate.theme === 'white');
+        btnThemeBlack.classList.toggle('active', plate.theme === 'black');
+      }
+      const count = getEffectivePlateCount();
+      for (let i = 0; i < count; i++) {
+        studioState.slotThemes[i] = plate.theme;
+      }
+    }
     await openPrintStudioModal(plateId);
   }
 
@@ -2435,7 +2490,7 @@ document.addEventListener('DOMContentLoaded', () => {
       for (let i = 0; i < count; i++) {
         const targetId = studioState.slotPlateIds[i] || studioState.selectedPlateId;
         const plate = state.plates.find(p => String(p.id) === String(targetId)) || state.plates[i % (state.plates.length || 1)];
-        const slotTheme = (studioState.slotThemes && studioState.slotThemes[i]) || studioState.theme || 'white';
+        const slotTheme = (studioState.slotThemes && studioState.slotThemes[i]) || (plate && plate.theme) || studioState.theme || 'white';
         if (plate) {
           cardsData.push({ plate, theme: slotTheme });
         }

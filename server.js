@@ -565,9 +565,10 @@ app.get('/api/plates/next-code', authenticate, async (req, res) => {
 // Gerar lote de placas sequenciais para o sistema e impressão gráfica
 app.post('/api/plates/batch-generate', authenticate, async (req, res) => {
   try {
-    const { count = 1, destinationUrl, type = 'google', assignedUserId, location = 'Balcão', startCode } = req.body;
+    const { count = 1, destinationUrl, type = 'google', assignedUserId, location = 'Balcão', startCode, theme = 'white' } = req.body;
     const userId = (req.user.role === 'admin' && assignedUserId) ? assignedUserId : req.user.id;
     const url = destinationUrl ? destinationUrl.trim() : 'https://search.google.com/local/writereview';
+    const plateTheme = theme === 'black' ? 'black' : 'white';
 
     const created = [];
     const requestedCount = Math.min(Math.max(parseInt(count, 10) || 1, 1), 200);
@@ -597,11 +598,12 @@ app.post('/api/plates/batch-generate', authenticate, async (req, res) => {
         slug: slug,
         name: `Placa Inteligente ${code}`,
         code: code,
+        theme: plateTheme,
         location: location || 'Balcão',
         type: type || 'google',
         destinationUrl: url,
         isActive: true,
-        notes: `Gerada em Lote [${code}]`,
+        notes: `Gerada em Lote [${code}] [THEME:${plateTheme}]`,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         scans: {
@@ -654,7 +656,7 @@ app.get('/api/plates/:id', authenticate, async (req, res) => {
 // Criar nova placa
 app.post('/api/plates', authenticate, async (req, res) => {
   try {
-    const { name, location, destinationUrl, type, slug, assignedUserId } = req.body;
+    const { name, location, destinationUrl, type, slug, assignedUserId, theme = 'white' } = req.body;
 
     if (!name || !destinationUrl) {
       return res.status(400).json({ success: false, message: 'Nome e URL de destino são obrigatórios.' });
@@ -692,17 +694,20 @@ app.post('/api/plates', authenticate, async (req, res) => {
       }
     }
 
+    const plateTheme = theme === 'black' ? 'black' : 'white';
+
     const newPlate = {
       id: 'plk-' + Math.random().toString(36).substring(2, 9),
       userId: ownerId,
       slug: uniqueSlug,
       code: plateCode,
       name: name.trim(),
+      theme: plateTheme,
       location: (location || 'Balcão / Entrada').trim(),
       type: type || 'google',
       destinationUrl: destinationUrl.trim(),
       isActive: true,
-      notes: `[${plateCode}]`,
+      notes: `[${plateCode}] [THEME:${plateTheme}]`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       scans: {
@@ -723,7 +728,7 @@ app.post('/api/plates', authenticate, async (req, res) => {
 // Atualizar placa existente
 app.put('/api/plates/:id', authenticate, async (req, res) => {
   try {
-    const { name, location, destinationUrl, type, slug, isActive, assignedUserId } = req.body;
+    const { name, location, destinationUrl, type, slug, isActive, assignedUserId, theme } = req.body;
     const plates = await db.getPlates();
     const existing = plates.find(p => p.id === req.params.id);
 
@@ -758,6 +763,10 @@ app.put('/api/plates/:id', authenticate, async (req, res) => {
       isActive: isActive !== undefined ? Boolean(isActive) : existing.isActive,
       userId: updatedUserId
     };
+
+    if (theme === 'white' || theme === 'black') {
+      updatePayload.theme = theme;
+    }
 
     const updated = await db.updatePlate(existing.id, updatePayload);
     res.json({ success: true, plate: updated });

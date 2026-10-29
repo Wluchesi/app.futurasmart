@@ -4112,3 +4112,81 @@ html, body {
   gap: 10px;
 }
 
+/* ========================================================
+   SELETOR DE COR DA PLACA NOS MODAIS (CRIAÇÃO / EDIÇÃO)
+   ======================================================== */
+.modal-theme-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.theme-radio-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.theme-radio-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.theme-radio-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.theme-radio-card.active {
+  border-color: #38BDF8 !important;
+  background: rgba(6, 182, 212, 0.15) !important;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
+}
+
+.theme-radio-visual {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #FFFFFF;
+}
+
+.theme-radio-dot {
+  font-size: 1.05rem;
+}
+
+/* Badge de Cor no Card da Placa */
+.plate-color-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-left: 6px;
+}
+
+.plate-color-badge.badge-color-white {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.plate-color-badge.badge-color-black {
+  background: rgba(15, 23, 42, 0.85);
+  color: #E2E8F0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+
