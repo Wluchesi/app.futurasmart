@@ -1183,6 +1183,26 @@ document.addEventListener('DOMContentLoaded', () => {
         await fetchAnalytics();
         await fetchNextPlateCode();
         if (state.currentUser?.role === 'admin') fetchUsersList();
+
+        if (data.plates && data.plates.length > 0) {
+          state.lastCreatedPlateId = data.plates[0].id;
+          studioState.selectedPlateId = data.plates[0].id;
+          const bTheme = data.plates[0].theme || 'white';
+          studioState.theme = bTheme;
+          if (btnThemeWhite && btnThemeBlack) {
+            btnThemeWhite.classList.toggle('active', bTheme === 'white');
+            btnThemeBlack.classList.toggle('active', bTheme === 'black');
+          }
+          const effCount = getEffectivePlateCount();
+          studioState.slotPlateIds = [];
+          studioState.slotThemes = [];
+          for (let i = 0; i < effCount; i++) {
+            const p = data.plates[i % data.plates.length];
+            studioState.slotPlateIds[i] = p.id;
+            studioState.slotThemes[i] = p.theme || bTheme;
+          }
+          studioState.mode = 'existing';
+        }
       } else {
         showToast(data.message || 'Erro ao gerar lote de placas.', true);
       }
@@ -1237,10 +1257,23 @@ document.addEventListener('DOMContentLoaded', () => {
         await fetchAnalytics();
         if (state.currentUser?.role === 'admin') fetchUsersList();
 
-        // Vincula a placa recém-criada ao Estúdio de Impressão
+        // Vincula a placa recém-criada/editada ao Estúdio de Impressão com sua cor escolhida
         if (data.plate && data.plate.id) {
           state.lastCreatedPlateId = data.plate.id;
           studioState.selectedPlateId = data.plate.id;
+          const plateTheme = data.plate.theme || selectedTheme || 'white';
+          studioState.theme = plateTheme;
+          if (btnThemeWhite && btnThemeBlack) {
+            btnThemeWhite.classList.toggle('active', plateTheme === 'white');
+            btnThemeBlack.classList.toggle('active', plateTheme === 'black');
+          }
+          const effCount = getEffectivePlateCount();
+          studioState.slotPlateIds = [];
+          studioState.slotThemes = [];
+          for (let i = 0; i < effCount; i++) {
+            studioState.slotPlateIds[i] = data.plate.id;
+            studioState.slotThemes[i] = plateTheme;
+          }
           studioState.mode = 'existing';
         }
       } else {
@@ -1775,11 +1808,17 @@ document.addEventListener('DOMContentLoaded', () => {
       btnRepeatFirstPlate.addEventListener('click', () => {
         const count = getEffectivePlateCount();
         const firstId = studioState.slotPlateIds[0] || studioState.selectedPlateId || (state.plates[0] && state.plates[0].id);
-        const firstTheme = (studioState.slotThemes && studioState.slotThemes[0]) || studioState.theme || 'white';
+        const firstPlate = state.plates.find(p => String(p.id) === String(firstId));
+        const firstTheme = (studioState.slotThemes && studioState.slotThemes[0]) || (firstPlate && firstPlate.theme) || studioState.theme || 'white';
         if (!firstId) return;
         for (let i = 0; i < count; i++) {
           studioState.slotPlateIds[i] = firstId;
           studioState.slotThemes[i] = firstTheme;
+        }
+        studioState.theme = firstTheme;
+        if (btnThemeWhite && btnThemeBlack) {
+          btnThemeWhite.classList.toggle('active', firstTheme === 'white');
+          btnThemeBlack.classList.toggle('active', firstTheme === 'black');
         }
         renderSlotSelectors();
         renderStudioSheet();
@@ -2070,14 +2109,15 @@ document.addEventListener('DOMContentLoaded', () => {
       studioState.slotPlateIds[0] = studioState.selectedPlateId || state.plates[0].id;
     }
 
-    // Preenche slots subsequentes com placas diferentes se houver e temas padrão
+    // Preenche slots subsequentes e sincroniza temas com a cor cadastrada de cada placa
     for (let i = 0; i < count; i++) {
       if (!studioState.slotPlateIds[i]) {
         const candidate = state.plates[i % (state.plates.length || 1)] || state.plates[0];
         studioState.slotPlateIds[i] = candidate ? candidate.id : '';
       }
+      const slotPlate = state.plates.find(p => String(p.id) === String(studioState.slotPlateIds[i]));
       if (!studioState.slotThemes[i]) {
-        studioState.slotThemes[i] = studioState.theme || 'white';
+        studioState.slotThemes[i] = (slotPlate && slotPlate.theme === 'black') ? 'black' : ((slotPlate && slotPlate.theme === 'white') ? 'white' : (studioState.theme || 'white'));
       }
     }
 
@@ -2086,12 +2126,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     container.innerHTML = labels.map((label, index) => {
       const currentSelectedId = studioState.slotPlateIds[index] || '';
-      const currentTheme = studioState.slotThemes[index] || studioState.theme || 'white';
+      const slotPlate = state.plates.find(p => String(p.id) === String(currentSelectedId));
+      const currentTheme = studioState.slotThemes[index] || (slotPlate && slotPlate.theme) || studioState.theme || 'white';
 
       const optionsHtml = state.plates.map(p => {
         const isSelected = String(p.id) === String(currentSelectedId);
+        const colorTag = p.theme === 'black' ? '⚫' : '⚪';
         return `<option value="${p.id}" ${isSelected ? 'selected' : ''}>
-          ${p.code ? '[' + p.code + '] ' : ''}${escapeHtml(p.name)} (${escapeHtml(p.slug)})
+          ${colorTag} ${p.code ? '[' + p.code + '] ' : ''}${escapeHtml(p.name)} (${escapeHtml(p.slug)})
         </option>`;
       }).join('') || '<option value="">Nenhuma placa cadastrada</option>';
 
@@ -2128,10 +2170,24 @@ document.addEventListener('DOMContentLoaded', () => {
     container.querySelectorAll('.slot-plate-select').forEach(select => {
       select.addEventListener('change', (e) => {
         const slotIdx = parseInt(e.target.getAttribute('data-slot'), 10);
-        studioState.slotPlateIds[slotIdx] = e.target.value;
-        if (slotIdx === 0) {
-          studioState.selectedPlateId = e.target.value;
+        const newPlateId = e.target.value;
+        studioState.slotPlateIds[slotIdx] = newPlateId;
+
+        // Ao mudar a placa do slot, aplica automaticamente a cor salva dela
+        const newPlate = state.plates.find(p => String(p.id) === String(newPlateId));
+        if (newPlate) {
+          const newTheme = (newPlate.theme === 'black') ? 'black' : 'white';
+          studioState.slotThemes[slotIdx] = newTheme;
+          if (slotIdx === 0) {
+            studioState.selectedPlateId = newPlateId;
+            studioState.theme = newTheme;
+            if (btnThemeWhite && btnThemeBlack) {
+              btnThemeWhite.classList.toggle('active', newTheme === 'white');
+              btnThemeBlack.classList.toggle('active', newTheme === 'black');
+            }
+          }
         }
+        renderSlotSelectors();
         renderStudioSheet();
       });
     });
@@ -2162,31 +2218,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function openPrintStudioModal(targetPlateId) {
+  async function openPrintStudioModal(targetPlateId, preserveCustomSlots = false) {
     await fetchNextPlateCode();
     const count = getEffectivePlateCount();
 
+    // Determina a placa ativa inicial e seu respectivo tema
+    const primaryId = targetPlateId || studioState.selectedPlateId || state.lastCreatedPlateId || (state.plates[0] && state.plates[0].id);
+    const primaryPlate = state.plates.find(p => String(p.id) === String(primaryId));
+    const primaryTheme = (primaryPlate && primaryPlate.theme === 'black') ? 'black' : ((primaryPlate && primaryPlate.theme === 'white') ? 'white' : (studioState.theme || 'white'));
+
+    studioState.theme = primaryTheme;
+    if (btnThemeWhite && btnThemeBlack) {
+      btnThemeWhite.classList.toggle('active', primaryTheme === 'white');
+      btnThemeBlack.classList.toggle('active', primaryTheme === 'black');
+    }
+
+    if (!Array.isArray(studioState.slotPlateIds)) {
+      studioState.slotPlateIds = [];
+    }
+    if (!Array.isArray(studioState.slotThemes)) {
+      studioState.slotThemes = [];
+    }
+
     if (targetPlateId) {
       studioState.selectedPlateId = targetPlateId;
-      studioState.slotPlateIds = [targetPlateId];
-      studioState.slotThemes = [studioState.theme || 'white'];
-      // Preenche os outros slots com as demais placas existentes
-      const others = state.plates.filter(p => String(p.id) !== String(targetPlateId));
-      for (let i = 1; i < count; i++) {
-        studioState.slotPlateIds[i] = others[(i - 1) % (others.length || 1)]?.id || targetPlateId;
-        studioState.slotThemes[i] = studioState.theme || 'white';
+      if (!preserveCustomSlots) {
+        studioState.slotPlateIds = [targetPlateId];
+        studioState.slotThemes = [primaryTheme];
+        // Preenche os outros slots com as demais placas existentes e suas cores individuais
+        const others = state.plates.filter(p => String(p.id) !== String(targetPlateId));
+        for (let i = 1; i < count; i++) {
+          const otherPlate = others[(i - 1) % (others.length || 1)] || primaryPlate;
+          studioState.slotPlateIds[i] = otherPlate?.id || targetPlateId;
+          studioState.slotThemes[i] = (otherPlate && otherPlate.theme === 'black') ? 'black' : 'white';
+        }
       }
       studioState.mode = 'existing';
     } else {
-      if (!studioState.selectedPlateId && state.plates.length > 0) {
-        studioState.selectedPlateId = state.lastCreatedPlateId || state.plates[0].id;
+      if (!studioState.selectedPlateId && primaryId) {
+        studioState.selectedPlateId = primaryId;
       }
-      if (!Array.isArray(studioState.slotPlateIds) || studioState.slotPlateIds.length === 0) {
-        studioState.slotPlateIds = [];
-        studioState.slotThemes = [];
+      if (studioState.slotPlateIds.length === 0) {
         for (let i = 0; i < count; i++) {
-          studioState.slotPlateIds[i] = state.plates[i % (state.plates.length || 1)]?.id || state.plates[0]?.id;
-          studioState.slotThemes[i] = studioState.theme || 'white';
+          const p = state.plates[i % (state.plates.length || 1)] || state.plates[0];
+          studioState.slotPlateIds[i] = p?.id || '';
+          studioState.slotThemes[i] = (p && p.theme === 'black') ? 'black' : 'white';
+        }
+      } else {
+        for (let i = 0; i < count; i++) {
+          const p = state.plates.find(x => String(x.id) === String(studioState.slotPlateIds[i]));
+          if (!studioState.slotThemes[i]) {
+            studioState.slotThemes[i] = (p && p.theme === 'black') ? 'black' : primaryTheme;
+          }
         }
       }
     }
@@ -2228,19 +2311,21 @@ document.addEventListener('DOMContentLoaded', () => {
   async function openPrintStudioModalWithPlate(plateId) {
     studioState.mode = 'existing';
     studioState.selectedPlateId = plateId;
-    const plate = state.plates.find(p => p.id === plateId);
-    if (plate && plate.theme) {
-      studioState.theme = plate.theme;
-      if (btnThemeWhite && btnThemeBlack) {
-        btnThemeWhite.classList.toggle('active', plate.theme === 'white');
-        btnThemeBlack.classList.toggle('active', plate.theme === 'black');
-      }
-      const count = getEffectivePlateCount();
-      for (let i = 0; i < count; i++) {
-        studioState.slotThemes[i] = plate.theme;
-      }
+    const plate = state.plates.find(p => String(p.id) === String(plateId));
+    const chosenTheme = (plate && plate.theme === 'black') ? 'black' : 'white';
+    studioState.theme = chosenTheme;
+    if (btnThemeWhite && btnThemeBlack) {
+      btnThemeWhite.classList.toggle('active', chosenTheme === 'white');
+      btnThemeBlack.classList.toggle('active', chosenTheme === 'black');
     }
-    await openPrintStudioModal(plateId);
+    const count = getEffectivePlateCount();
+    studioState.slotPlateIds = [];
+    studioState.slotThemes = [];
+    for (let i = 0; i < count; i++) {
+      studioState.slotPlateIds[i] = plateId;
+      studioState.slotThemes[i] = chosenTheme;
+    }
+    await openPrintStudioModal(plateId, true);
   }
 
   function closePrintStudioModal() {
