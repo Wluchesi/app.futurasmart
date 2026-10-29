@@ -1566,7 +1566,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ${optionsHtml}
           </select>
 
-          <!-- Seletor de Cor do Slot -->
+          <!-- Seletor de Cor do Slot (Branco vs Preto) -->
           <div class="studio-slot-color-bar">
             <span class="studio-slot-color-caption">Cor:</span>
             <div class="slot-color-options">
@@ -1575,12 +1575,6 @@ document.addEventListener('DOMContentLoaded', () => {
               </button>
               <button type="button" class="slot-color-btn ${currentTheme === 'black' ? 'active' : ''}" data-slot="${index}" data-theme="black" title="Black Premium">
                 <span class="slot-color-dot dot-black"></span> Preto
-              </button>
-              <button type="button" class="slot-color-btn ${currentTheme === 'gold' ? 'active' : ''}" data-slot="${index}" data-theme="gold" title="Dourado Luxo">
-                <span class="slot-color-dot dot-gold"></span> Dourado
-              </button>
-              <button type="button" class="slot-color-btn ${currentTheme === 'blue' ? 'active' : ''}" data-slot="${index}" data-theme="blue" title="Azul Marinho">
-                <span class="slot-color-dot dot-blue"></span> Azul
               </button>
             </div>
           </div>
@@ -1733,19 +1727,8 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     ` : '';
 
-    let qrBgParam = 'ffffff';
-    let qrColorParam = '000000';
-
-    if (currentTheme === 'black') {
-      qrBgParam = '18181b';
-      qrColorParam = 'ffffff';
-    } else if (currentTheme === 'gold') {
-      qrBgParam = '1c1917';
-      qrColorParam = 'fef3c7';
-    } else if (currentTheme === 'blue') {
-      qrBgParam = '0b132b';
-      qrColorParam = '38bdf8';
-    }
+    const qrBgParam = isDark ? '18181b' : 'ffffff';
+    const qrColorParam = isDark ? 'ffffff' : '000000';
 
     const qrEndpoint = `/api/qrcode/${plateSlug}?src=qr&format=svg&bg=${qrBgParam}&color=${qrColorParam}&margin=1`;
 
@@ -1994,21 +1977,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const redirectUrl = `${window.location.protocol}//${window.location.host}/r/${slug}?src=qr`;
         const card = img.closest('.print-plate-card');
 
-        let qrBg = '#ffffff';
-        let qrColor = '#000000';
-
-        if (card) {
-          if (card.classList.contains('theme-black')) {
-            qrBg = '#18181b';
-            qrColor = '#ffffff';
-          } else if (card.classList.contains('theme-gold')) {
-            qrBg = '#1c1917';
-            qrColor = '#fef3c7';
-          } else if (card.classList.contains('theme-blue')) {
-            qrBg = '#0b132b';
-            qrColor = '#38bdf8';
-          }
-        }
+        const isCardBlack = card ? card.classList.contains('theme-black') : (studioState.theme === 'black');
+        const qrBg = isCardBlack ? '#18181b' : '#ffffff';
+        const qrColor = isCardBlack ? '#ffffff' : '#000000';
 
         try {
           const dUrl = await window.QRCode.toDataURL(redirectUrl, {
