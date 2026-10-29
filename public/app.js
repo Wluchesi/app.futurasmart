@@ -71,8 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const studioBatchDestination = document.getElementById('studioBatchDestination');
   const studioAssignUser = document.getElementById('studioAssignUser');
   const studioSelectExistingPlates = document.getElementById('studioSelectExistingPlates');
-  const btnThemeWhite = document.getElementById('btnThemeWhite');
-  const btnThemeBlack = document.getElementById('btnThemeBlack');
   const btnLayout1 = document.getElementById('btnLayout1');
   const btnLayout2 = document.getElementById('btnLayout2');
   const btnLayout4 = document.getElementById('btnLayout4');
@@ -213,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function init() {
     setupEventListeners();
+    applyRolePermissions();
 
     if (state.token) {
       const isValid = await checkCurrentSession();
@@ -255,21 +254,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function applyRolePermissions() {
+    const isAdmin = state.currentUser?.role === 'admin';
+    document.body.classList.toggle('is-admin', isAdmin);
+
+    if (btnOpenUsersModal) {
+      btnOpenUsersModal.style.setProperty('display', isAdmin ? 'inline-flex' : 'none', 'important');
+    }
+    if (btnOpenPrintStudio) {
+      btnOpenPrintStudio.style.setProperty('display', isAdmin ? 'inline-flex' : 'none', 'important');
+    }
+    if (btnStudioOpenPrintModal) {
+      btnStudioOpenPrintModal.style.setProperty('display', isAdmin ? 'inline-flex' : 'none', 'important');
+    }
+    if (adminUserFilterSection) {
+      adminUserFilterSection.style.display = isAdmin ? 'block' : 'none';
+    }
+  }
+
   function onAuthSuccess() {
     closeAuthModal();
     updateUserProfileHeader();
+    applyRolePermissions();
 
     // Carrega dados conforme permissões do usuário
     fetchAnalytics();
     fetchPlates();
 
-    if (state.currentUser.role === 'admin') {
-      btnOpenUsersModal.style.display = 'inline-flex';
-      if (adminUserFilterSection) adminUserFilterSection.style.display = 'block';
+    if (state.currentUser?.role === 'admin') {
       fetchUsersList();
-    } else {
-      btnOpenUsersModal.style.display = 'none';
-      if (adminUserFilterSection) adminUserFilterSection.style.display = 'none';
     }
   }
 
@@ -288,6 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
       userRoleBadge.textContent = 'Cliente';
       userRoleBadge.style.color = '#38BDF8';
     }
+    applyRolePermissions();
   }
 
   function handleLogout() {
@@ -297,7 +311,8 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedPlateIds.clear();
     updateBatchActionBar();
     localStorage.removeItem('futura_smart_token');
-    if (adminUserFilterSection) adminUserFilterSection.style.display = 'none';
+    applyRolePermissions();
+    closePrintStudioModal();
     openAuthModal();
     showToast('Você saiu do sistema.');
   }
@@ -671,9 +686,11 @@ document.addEventListener('DOMContentLoaded', () => {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
               Estúdio QR & NFC
             </button>
+            ${isAdmin ? `
             <button class="btn-card-action btn-print-plate" data-id="${plate.id}" style="border-color: rgba(6, 182, 212, 0.45); color: #38BDF8;" title="Imprimir Arte 10x15cm no Estúdio A4">
               🖨️ Imprimir 10x15
             </button>
+            ` : ''}
             <button class="btn-card-action btn-edit-plate" data-id="${plate.id}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               Editar
@@ -748,10 +765,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Sincroniza também com o estúdio gráfico caso esta seja a placa em foco
             if (studioState.selectedPlateId === plateId) {
               studioState.theme = theme;
-              if (btnThemeWhite && btnThemeBlack) {
-                btnThemeWhite.classList.toggle('active', theme === 'white');
-                btnThemeBlack.classList.toggle('active', theme === 'black');
-              }
             }
           } else {
             showToast(data.message || 'Erro ao alterar cor da placa.', true);
@@ -1429,10 +1442,6 @@ document.addEventListener('DOMContentLoaded', () => {
           studioState.selectedPlateId = data.plates[0].id;
           const bTheme = data.plates[0].theme || 'white';
           studioState.theme = bTheme;
-          if (btnThemeWhite && btnThemeBlack) {
-            btnThemeWhite.classList.toggle('active', bTheme === 'white');
-            btnThemeBlack.classList.toggle('active', bTheme === 'black');
-          }
           const effCount = getEffectivePlateCount();
           studioState.slotPlateIds = [];
           studioState.slotThemes = [];
@@ -1513,10 +1522,6 @@ document.addEventListener('DOMContentLoaded', () => {
           studioState.selectedPlateId = data.plate.id;
           const plateTheme = data.plate.theme || selectedTheme || 'white';
           studioState.theme = plateTheme;
-          if (btnThemeWhite && btnThemeBlack) {
-            btnThemeWhite.classList.toggle('active', plateTheme === 'white');
-            btnThemeBlack.classList.toggle('active', plateTheme === 'black');
-          }
           const effCount = getEffectivePlateCount();
           studioState.slotPlateIds = [];
           studioState.slotThemes = [];
@@ -1917,6 +1922,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btnDownloadSvg.href = `/api/qrcode/${plate.slug}?src=qr&format=svg`;
     btnDownloadSvg.download = `qrcode-${plate.slug}.svg`;
 
+    if (btnStudioOpenPrintModal) {
+      btnStudioOpenPrintModal.style.display = (state.currentUser?.role === 'admin') ? 'inline-flex' : 'none';
+    }
+
     studioModal.classList.add('is-active');
   }
 
@@ -2012,11 +2021,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   let studioState = {
     mode: 'existing', // 'existing' por padrão para imprimir a placa cadastrada
-    printMode: 'real', // 'real' (Tamanho Real 10x15cm multi-folhas) ou 'compact' (Grade compacta em 1 folha A4)
+    printMode: 'real', // Sempre 'real' (Tamanho Real 10x15cm multi-folhas)
     totalQuantity: 6, // Quantidade de placas em modo Real (padrão 6)
-    compactLayout: 2, // 1, 2, 4, 6, 8, 12 placas na folha A4 em modo compacto
     layout: 6, // mantido para compatibilidade
-    theme: 'white', // 'white' ou 'black' (sem dourado ou azul)
+    theme: 'white', // fallback
     showCropMarks: true,
     nextCode: 'PI-102',
     zoom: 0.6,
@@ -2026,24 +2034,29 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   function getEffectivePlateCount() {
-    if (studioState.printMode === 'real') {
-      const q = parseInt(studioState.totalQuantity, 10);
-      return (isNaN(q) || q < 1) ? 2 : Math.min(q, 100);
-    } else {
-      const c = parseInt(studioState.compactLayout, 10);
-      return (isNaN(c) || c < 1) ? 2 : Math.min(c, 12);
-    }
+    const q = parseInt(studioState.totalQuantity, 10);
+    return (isNaN(q) || q < 1) ? 2 : Math.min(q, 100);
   }
 
   function setupStudioEventListeners() {
     if (btnOpenPrintStudio) {
-      btnOpenPrintStudio.addEventListener('click', () => openPrintStudioModal());
+      btnOpenPrintStudio.addEventListener('click', () => {
+        if (state.currentUser?.role !== 'admin') {
+          showToast('Acesso restrito: Somente administradores têm acesso ao Estúdio Gráfico & Impressão A4.', true);
+          return;
+        }
+        openPrintStudioModal();
+      });
     }
     if (btnClosePrintStudio) {
       btnClosePrintStudio.addEventListener('click', closePrintStudioModal);
     }
     if (btnStudioOpenPrintModal) {
       btnStudioOpenPrintModal.addEventListener('click', () => {
+        if (state.currentUser?.role !== 'admin') {
+          showToast('Acesso restrito: Somente administradores têm acesso ao Estúdio Gráfico & Impressão A4.', true);
+          return;
+        }
         const plate = state.selectedPlateForStudio;
         if (plate) {
           closeStudioModal();
@@ -2066,10 +2079,6 @@ document.addEventListener('DOMContentLoaded', () => {
           studioState.slotThemes[i] = firstTheme;
         }
         studioState.theme = firstTheme;
-        if (btnThemeWhite && btnThemeBlack) {
-          btnThemeWhite.classList.toggle('active', firstTheme === 'white');
-          btnThemeBlack.classList.toggle('active', firstTheme === 'black');
-        }
         renderSlotSelectors();
         renderStudioSheet();
         showToast('Primeira placa e cor replicadas em todos os slots!');
@@ -2098,38 +2107,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Seleção de Tema Global (⚪ Branco vs ⚫ Preto)
-    if (btnThemeWhite && btnThemeBlack) {
-      btnThemeWhite.addEventListener('click', () => {
-        studioState.theme = 'white';
-        btnThemeWhite.classList.add('active');
-        btnThemeBlack.classList.remove('active');
-        const count = getEffectivePlateCount();
-        for (let i = 0; i < count; i++) {
-          studioState.slotThemes[i] = 'white';
-        }
-        renderSlotSelectors();
-        renderStudioSheet();
-      });
-
-      btnThemeBlack.addEventListener('click', () => {
-        studioState.theme = 'black';
-        btnThemeBlack.classList.add('active');
-        btnThemeWhite.classList.remove('active');
-        const count = getEffectivePlateCount();
-        for (let i = 0; i < count; i++) {
-          studioState.slotThemes[i] = 'black';
-        }
-        renderSlotSelectors();
-        renderStudioSheet();
-      });
-    }
-
-    // Alternância de Formato de Impressão (Tamanho Real vs Grade Compacta)
-    const btnModeRealSize = document.getElementById('btnModeRealSize');
-    const btnModeCompactSheet = document.getElementById('btnModeCompactSheet');
-    const sectionRealSizeOptions = document.getElementById('sectionRealSizeOptions');
-    const sectionCompactSheetOptions = document.getElementById('sectionCompactSheetOptions');
+    // Configuração de Quantidade Total de Placas (Tamanho Real 10x15 cm)
     const inputCustomQty = document.getElementById('inputCustomQty');
     const customQtyPagesHint = document.getElementById('customQtyPagesHint');
 
@@ -2139,28 +2117,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const pages = Math.ceil(q / 2);
       customQtyPagesHint.textContent = `= ${pages} folha${pages > 1 ? 's' : ''} A4`;
     }
-
-    if (btnModeRealSize && btnModeCompactSheet) {
-      btnModeRealSize.addEventListener('click', () => {
-        studioState.printMode = 'real';
-        btnModeRealSize.classList.add('active');
-        btnModeCompactSheet.classList.remove('active');
-        if (sectionRealSizeOptions) sectionRealSizeOptions.style.display = 'block';
-        if (sectionCompactSheetOptions) sectionCompactSheetOptions.style.display = 'none';
-        renderSlotSelectors();
-        renderStudioSheet();
-      });
-
-      btnModeCompactSheet.addEventListener('click', () => {
-        studioState.printMode = 'compact';
-        btnModeCompactSheet.classList.add('active');
-        btnModeRealSize.classList.remove('active');
-        if (sectionRealSizeOptions) sectionRealSizeOptions.style.display = 'none';
-        if (sectionCompactSheetOptions) sectionCompactSheetOptions.style.display = 'block';
-        renderSlotSelectors();
-        renderStudioSheet();
-      });
-    }
+    updatePagesHint();
 
     // Botões de quantidade no modo real (2, 4, 6, 8, 12)
     document.querySelectorAll('.qty-btn-option').forEach(btn => {
@@ -2198,18 +2155,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderStudioSheet();
       });
     }
-
-    // Botões de grade no modo compacto (1, 2, 4, 6, 8, 12)
-    document.querySelectorAll('.compact-btn-option').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.compact-btn-option').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const count = parseInt(btn.getAttribute('data-compact'), 10) || 2;
-        studioState.compactLayout = count;
-        renderSlotSelectors();
-        renderStudioSheet();
-      });
-    });
 
     // Toggle de marcas de corte
     if (checkCropMarks) {
@@ -2329,13 +2274,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function getSlotLabels(count) {
     const labels = [];
     for (let i = 1; i <= count; i++) {
-      if (studioState.printMode === 'real') {
-        const pageNum = Math.ceil(i / 2);
-        const pos = (i % 2 === 1) ? 'Esquerda' : 'Direita';
-        labels.push(`Pág ${pageNum} • ${pos}`);
-      } else {
-        labels.push(`Posição ${i}`);
-      }
+      const pageNum = Math.ceil(i / 2);
+      const pos = (i % 2 === 1) ? 'Esquerda' : 'Direita';
+      labels.push(`Pág ${pageNum} • ${pos}`);
     }
     return labels;
   }
@@ -2431,10 +2372,6 @@ document.addEventListener('DOMContentLoaded', () => {
           if (slotIdx === 0) {
             studioState.selectedPlateId = newPlateId;
             studioState.theme = newTheme;
-            if (btnThemeWhite && btnThemeBlack) {
-              btnThemeWhite.classList.toggle('active', newTheme === 'white');
-              btnThemeBlack.classList.toggle('active', newTheme === 'black');
-            }
           }
         }
         renderSlotSelectors();
@@ -2469,6 +2406,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function openPrintStudioModal(targetPlateId, preserveCustomSlots = false) {
+    if (state.currentUser?.role !== 'admin') {
+      showToast('Acesso restrito: Somente administradores têm acesso ao Estúdio Gráfico & Impressão A4.', true);
+      return;
+    }
     await fetchNextPlateCode();
     const count = getEffectivePlateCount();
 
@@ -2478,10 +2419,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const primaryTheme = (primaryPlate && primaryPlate.theme === 'black') ? 'black' : ((primaryPlate && primaryPlate.theme === 'white') ? 'white' : (studioState.theme || 'white'));
 
     studioState.theme = primaryTheme;
-    if (btnThemeWhite && btnThemeBlack) {
-      btnThemeWhite.classList.toggle('active', primaryTheme === 'white');
-      btnThemeBlack.classList.toggle('active', primaryTheme === 'black');
-    }
 
     if (!Array.isArray(studioState.slotPlateIds)) {
       studioState.slotPlateIds = [];
@@ -2559,15 +2496,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function openPrintStudioModalWithPlate(plateId) {
+    if (state.currentUser?.role !== 'admin') {
+      showToast('Acesso restrito: Somente administradores têm acesso ao Estúdio Gráfico & Impressão A4.', true);
+      return;
+    }
     studioState.mode = 'existing';
     studioState.selectedPlateId = plateId;
     const plate = state.plates.find(p => String(p.id) === String(plateId));
     const chosenTheme = (plate && plate.theme === 'black') ? 'black' : 'white';
     studioState.theme = chosenTheme;
-    if (btnThemeWhite && btnThemeBlack) {
-      btnThemeWhite.classList.toggle('active', chosenTheme === 'white');
-      btnThemeBlack.classList.toggle('active', chosenTheme === 'black');
-    }
     const count = getEffectivePlateCount();
     studioState.slotPlateIds = [];
     studioState.slotThemes = [];
@@ -2841,52 +2778,32 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (studioState.printMode === 'real') {
-      // Modo Tamanho Real 10x15cm (2 placas por folha A4 em escala 1:1)
-      const totalPages = Math.ceil(count / 2);
-      a4PrintSheet.className = totalPages > 1 ? 'a4-sheet-container multi-page' : 'a4-sheet-container';
+    // Modo Tamanho Real 10x15cm (2 placas por folha A4 em escala 1:1)
+    const totalPages = Math.ceil(count / 2);
+    a4PrintSheet.className = totalPages > 1 ? 'a4-sheet-container multi-page' : 'a4-sheet-container';
 
-      if (canvasPlatesSummary) {
-        canvasPlatesSummary.textContent = `${count} Placa(s) Real (10x15cm) • ${totalPages} Folha(s) A4`;
-      }
+    if (canvasPlatesSummary) {
+      canvasPlatesSummary.textContent = `${count} Placa(s) Real (10x15cm) • ${totalPages} Folha(s) A4`;
+    }
 
-      let sheetsHtml = '';
-      for (let p = 0; p < totalPages; p++) {
-        const pageCards = cardsData.slice(p * 2, p * 2 + 2);
-        const pageCardsHtml = pageCards.map(c => renderPlateCardHtml(c.plate, c.theme, studioState.showCropMarks)).join('');
+    let sheetsHtml = '';
+    for (let p = 0; p < totalPages; p++) {
+      const pageCards = cardsData.slice(p * 2, p * 2 + 2);
+      const pageCardsHtml = pageCards.map(c => renderPlateCardHtml(c.plate, c.theme, studioState.showCropMarks)).join('');
 
-        sheetsHtml += `
-          <div class="a4-page-sheet" data-page="${p + 1}">
-            <div class="a4-page-indicator-badge">Folha ${p + 1} de ${totalPages} • Tamanho Real 10x15cm (1:1)</div>
-            <div class="a4-sheet-inner layout-2">
-              ${pageCardsHtml}
-            </div>
-          </div>
-        `;
-        if (p < totalPages - 1) {
-          sheetsHtml += '<div class="html2pdf__page-break"></div>';
-        }
-      }
-      a4PrintSheet.innerHTML = sheetsHtml;
-    } else {
-      // Modo Grade Compacta (1 única folha A4)
-      a4PrintSheet.className = 'a4-sheet-container';
-
-      if (canvasPlatesSummary) {
-        canvasPlatesSummary.textContent = `${count} Placa(s) Compacta(s) na Folha A4`;
-      }
-
-      const allCardsHtml = cardsData.map(c => renderPlateCardHtml(c.plate, c.theme, studioState.showCropMarks)).join('');
-      a4PrintSheet.innerHTML = `
-        <div class="a4-page-sheet layout-compact" data-page="1">
-          <div class="a4-sheet-inner layout-compact-${count}">
-            <div class="compact-grid-scale-wrapper grid-${count}">
-              ${allCardsHtml}
-            </div>
+      sheetsHtml += `
+        <div class="a4-page-sheet" data-page="${p + 1}">
+          <div class="a4-page-indicator-badge">Folha ${p + 1} de ${totalPages} • Tamanho Real 10x15cm (1:1)</div>
+          <div class="a4-sheet-inner layout-2">
+            ${pageCardsHtml}
           </div>
         </div>
       `;
+      if (p < totalPages - 1) {
+        sheetsHtml += '<div class="html2pdf__page-break"></div>';
+      }
     }
+    a4PrintSheet.innerHTML = sheetsHtml;
 
     // Se QRCode client-side estiver disponível, gera Data URLs locais em altíssima definição (instantâneo e sem CORS para html2pdf)
     if (window.QRCode && window.QRCode.toDataURL) {
@@ -2967,7 +2884,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fileSuffix = distinctSlugs.length > 0 ? distinctSlugs.slice(0, 3).join('_') : studioState.theme;
       }
 
-      const modePrefix = studioState.printMode === 'real' ? `${count}placas-tamanho-real` : `${count}placas-grade-compacta`;
+      const modePrefix = `${count}placas-tamanho-real`;
 
       // Prepara opções do html2pdf para escala exata A4 sem distorção
       const opt = {

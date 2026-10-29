@@ -22,7 +22,13 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  etag: false,
+  maxAge: 0,
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  }
+}));
 
 // Stateless Session Token Engine (100% compatível com Serverless e Netlify Functions)
 const TOKEN_SECRET = process.env.TOKEN_SECRET || 'futura-smart-nfc-token-secret-key-2026';

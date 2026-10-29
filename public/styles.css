@@ -4429,4 +4429,14 @@ html, body {
   cursor: pointer;
 }
 
+/* Restrição de Acesso Exclusivo para Administradores */
+.btn-admin-only {
+  display: none !important;
+}
+
+body.is-admin .btn-admin-only {
+  display: inline-flex !important;
+}
+
+
 

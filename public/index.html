@@ -15,7 +15,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261029_3">
 </head>
 <body>
 
@@ -79,7 +79,7 @@
           Criar Lote
         </button>
 
-        <button id="btnOpenPrintStudio" class="btn-secondary" style="border-color: rgba(6, 182, 212, 0.45); color: #38BDF8;" title="Estúdio de Criação de Placas (10x15cm) & Impressão A4 para Gráfica">
+        <button id="btnOpenPrintStudio" class="btn-secondary btn-admin-only" style="display:none !important; border-color: rgba(6, 182, 212, 0.45); color: #38BDF8;" title="Estúdio de Criação de Placas (10x15cm) & Impressão A4 para Gráfica">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 6 2 18 2 18 9"></polyline>
             <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
@@ -88,7 +88,7 @@
           Estúdio A4 & Gráfica
         </button>
 
-        <button id="btnOpenUsersModal" class="btn-secondary btn-admin-only" style="display:none;" title="Gerenciar todos os usuários cadastrados">
+        <button id="btnOpenUsersModal" class="btn-secondary btn-admin-only" style="display:none !important;" title="Gerenciar todos os usuários cadastrados">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
@@ -722,7 +722,7 @@
               </a>
             </div>
 
-            <button type="button" id="btnStudioOpenPrintModal" class="btn-primary" style="width: 100%; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <button type="button" id="btnStudioOpenPrintModal" class="btn-primary btn-admin-only" style="display: none !important; width: 100%; margin-top: 10px; align-items: center; justify-content: center; gap: 8px;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
               🖨️ Imprimir Arte 10x15 cm na Folha A4
             </button>
@@ -1038,7 +1038,7 @@
             <span class="studio-sparkle">🖨️</span>
             <h3 class="modal-title">Estúdio Gráfico & Impressão A4 (10x15 cm)</h3>
           </div>
-          <p class="modal-subtitle">Gere artes vetorizadas em 300 DPI prontas para gráfica nos modelos Branco ou Preto com sequência infinita de códigos únicos (PI-102...).</p>
+          <p class="modal-subtitle">Gere artes vetorizadas em 300 DPI prontas para gráfica no formato real 10x15 cm com sequência infinita de códigos únicos (PI-102...).</p>
         </div>
         <button class="btn-close" id="btnClosePrintStudio">&times;</button>
       </div>
@@ -1103,51 +1103,16 @@
             </button>
           </div>
 
-          <!-- Modelo Visual da Arte (Branco vs Preto) -->
+          <!-- Quantidade Total de Placas (Tamanho Real 10x15cm) -->
           <div class="studio-control-group">
-            <label class="studio-group-label">Modelo Visual da Placa (10 x 15 cm)</label>
-            <div class="theme-selection-grid">
-              <button type="button" class="theme-card-option active" data-theme="white" id="btnThemeWhite">
-                <div class="theme-card-preview preview-white">
-                  <div class="mini-bar"></div>
-                  <div class="mini-stars">★★★★★</div>
-                  <div class="mini-logo">Google</div>
-                </div>
-                <span class="theme-card-name">⚪ Clean Branco</span>
-              </button>
-
-              <button type="button" class="theme-card-option" data-theme="black" id="btnThemeBlack">
-                <div class="theme-card-preview preview-black">
-                  <div class="mini-bar"></div>
-                  <div class="mini-stars">★★★★★</div>
-                  <div class="mini-logo">Google</div>
-                </div>
-                <span class="theme-card-name">⚫ Black Premium</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Formato e Quantidade de Impressão -->
-          <div class="studio-control-group">
-            <label class="studio-group-label">Formato de Impressão</label>
-            <div class="print-mode-tabs">
-              <button type="button" class="print-mode-tab-btn active" id="btnModeRealSize">
-                <span style="font-size: 1.15rem;">📄</span>
-                <span>Tamanho Real 10x15cm</span>
-                <small>2 placas/pág • Múltiplas Folhas</small>
-              </button>
-              <button type="button" class="print-mode-tab-btn" id="btnModeCompactSheet">
-                <span style="font-size: 1.15rem;">📑</span>
-                <span>Grade Compacta</span>
-                <small>Miniaturas em 1 Folha A4</small>
-              </button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label class="studio-group-label" style="margin: 0;">Quantidade Total de Placas (10x15 cm)</label>
+              <span style="font-size: 0.72rem; color: #38BDF8; font-weight: 600; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); padding: 2px 8px; border-radius: 999px;">
+                Tamanho Real • 2 por folha A4
+              </span>
             </div>
 
-            <!-- Opções do Modo Real: 2, 4, 6, 8, 12 ou Quantidade Livre -->
             <div id="sectionRealSizeOptions">
-              <label class="studio-group-label" style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; margin-bottom: 6px;">
-                Quantidade Total de Placas (10x15 cm)
-              </label>
               <div class="real-qty-grid">
                 <button type="button" class="qty-btn-option" data-qty="2">2</button>
                 <button type="button" class="qty-btn-option" data-qty="4">4</button>
@@ -1161,24 +1126,6 @@
                 <label for="inputCustomQty" style="font-size: 0.78rem; color: #94A3B8; white-space: nowrap;">Outra quantidade:</label>
                 <input type="number" id="inputCustomQty" class="input-custom-qty" min="1" max="100" value="6" placeholder="Ex: 10">
                 <span id="customQtyPagesHint" style="font-size: 0.75rem; color: #38BDF8; font-weight: 700; margin-left: auto;">= 3 folhas A4</span>
-              </div>
-            </div>
-
-            <!-- Opções do Modo Grade Compacta: 1, 2, 4, 6, 8, 12 na mesma folha -->
-            <div id="sectionCompactSheetOptions" style="display: none;">
-              <label class="studio-group-label" style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; margin-bottom: 6px;">
-                Placas na mesma Folha A4
-              </label>
-              <div class="compact-layout-grid">
-                <button type="button" class="compact-btn-option" data-compact="1">1</button>
-                <button type="button" class="compact-btn-option active" data-compact="2">2</button>
-                <button type="button" class="compact-btn-option" data-compact="4">4</button>
-                <button type="button" class="compact-btn-option" data-compact="6">6</button>
-                <button type="button" class="compact-btn-option" data-compact="8">8</button>
-                <button type="button" class="compact-btn-option" data-compact="12">12</button>
-              </div>
-              <div style="font-size: 0.72rem; color: #94A3B8; margin-top: 6px; line-height: 1.3;">
-                * Ajusta as placas em escala reduzida para caberem todas em 1 única folha A4.
               </div>
             </div>
           </div>
@@ -1250,6 +1197,6 @@
     <span class="toast-message" id="toastMessage">Operação realizada com sucesso!</span>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20261029_3"></script>
 </body>
 </html>
