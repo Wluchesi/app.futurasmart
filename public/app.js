@@ -1328,13 +1328,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   let studioState = {
     mode: 'existing', // 'existing' por padrão para imprimir a placa cadastrada
-    theme: 'white', // 'white' ou 'black'
+    theme: 'white', // 'white', 'black', 'gold' ou 'blue'
     layout: 2, // 1, 2 ou 4
     showCropMarks: true,
     nextCode: 'PI-121',
     zoom: 0.6,
     selectedPlateId: null,
-    slotPlateIds: [] // Array de IDs de placas para cada posição na folha A4
+    slotPlateIds: [], // Array de IDs de placas para cada posição na folha A4
+    slotThemes: [] // Array de temas/cores para cada posição ('white', 'black', 'gold', 'blue')
   };
 
   function setupStudioEventListeners() {
@@ -1354,18 +1355,20 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Botão de replicar a 1ª placa em todos os slots
+    // Botão de replicar a 1ª placa e cor em todos os slots
     const btnRepeatFirstPlate = document.getElementById('btnRepeatFirstPlate');
     if (btnRepeatFirstPlate) {
       btnRepeatFirstPlate.addEventListener('click', () => {
         const firstId = studioState.slotPlateIds[0] || studioState.selectedPlateId || (state.plates[0] && state.plates[0].id);
+        const firstTheme = (studioState.slotThemes && studioState.slotThemes[0]) || studioState.theme || 'white';
         if (!firstId) return;
         for (let i = 0; i < studioState.layout; i++) {
           studioState.slotPlateIds[i] = firstId;
+          studioState.slotThemes[i] = firstTheme;
         }
         renderSlotSelectors();
         renderStudioSheet();
-        showToast('Primeira placa replicada em todos os slots da folha!');
+        showToast('Primeira placa e cor replicadas em todos os slots!');
       });
     }
 
@@ -1391,12 +1394,16 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Seleção de Tema (Branco vs Preto)
+    // Seleção de Tema Global (Branco vs Preto)
     if (btnThemeWhite && btnThemeBlack) {
       btnThemeWhite.addEventListener('click', () => {
         studioState.theme = 'white';
         btnThemeWhite.classList.add('active');
         btnThemeBlack.classList.remove('active');
+        for (let i = 0; i < studioState.layout; i++) {
+          studioState.slotThemes[i] = 'white';
+        }
+        renderSlotSelectors();
         renderStudioSheet();
       });
 
@@ -1404,6 +1411,10 @@ document.addEventListener('DOMContentLoaded', () => {
         studioState.theme = 'black';
         btnThemeBlack.classList.add('active');
         btnThemeWhite.classList.remove('active');
+        for (let i = 0; i < studioState.layout; i++) {
+          studioState.slotThemes[i] = 'black';
+        }
+        renderSlotSelectors();
         renderStudioSheet();
       });
     }
@@ -1509,23 +1520,32 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!Array.isArray(studioState.slotPlateIds)) {
       studioState.slotPlateIds = [];
     }
+    if (!Array.isArray(studioState.slotThemes)) {
+      studioState.slotThemes = [];
+    }
 
     if (!studioState.slotPlateIds[0] && state.plates.length > 0) {
       studioState.slotPlateIds[0] = studioState.selectedPlateId || state.plates[0].id;
     }
 
-    // Preenche slots subsequentes com placas diferentes se houver
+    // Preenche slots subsequentes com placas diferentes se houver e temas padrão
     for (let i = 0; i < count; i++) {
       if (!studioState.slotPlateIds[i]) {
         const candidate = state.plates[i] || state.plates[0];
         studioState.slotPlateIds[i] = candidate ? candidate.id : '';
       }
+      if (!studioState.slotThemes[i]) {
+        studioState.slotThemes[i] = studioState.theme || 'white';
+      }
     }
 
     studioState.slotPlateIds = studioState.slotPlateIds.slice(0, count);
+    studioState.slotThemes = studioState.slotThemes.slice(0, count);
 
     container.innerHTML = labels.map((label, index) => {
       const currentSelectedId = studioState.slotPlateIds[index] || '';
+      const currentTheme = studioState.slotThemes[index] || studioState.theme || 'white';
+
       const optionsHtml = state.plates.map(p => {
         const isSelected = String(p.id) === String(currentSelectedId);
         return `<option value="${p.id}" ${isSelected ? 'selected' : ''}>
@@ -1541,14 +1561,34 @@ document.addEventListener('DOMContentLoaded', () => {
               ${label}
             </span>
           </div>
+
           <select class="studio-select slot-plate-select" data-slot="${index}">
             ${optionsHtml}
           </select>
+
+          <!-- Seletor de Cor do Slot -->
+          <div class="studio-slot-color-bar">
+            <span class="studio-slot-color-caption">Cor:</span>
+            <div class="slot-color-options">
+              <button type="button" class="slot-color-btn ${currentTheme === 'white' ? 'active' : ''}" data-slot="${index}" data-theme="white" title="Clean Branco">
+                <span class="slot-color-dot dot-white"></span> Branco
+              </button>
+              <button type="button" class="slot-color-btn ${currentTheme === 'black' ? 'active' : ''}" data-slot="${index}" data-theme="black" title="Black Premium">
+                <span class="slot-color-dot dot-black"></span> Preto
+              </button>
+              <button type="button" class="slot-color-btn ${currentTheme === 'gold' ? 'active' : ''}" data-slot="${index}" data-theme="gold" title="Dourado Luxo">
+                <span class="slot-color-dot dot-gold"></span> Dourado
+              </button>
+              <button type="button" class="slot-color-btn ${currentTheme === 'blue' ? 'active' : ''}" data-slot="${index}" data-theme="blue" title="Azul Marinho">
+                <span class="slot-color-dot dot-blue"></span> Azul
+              </button>
+            </div>
+          </div>
         </div>
       `;
     }).join('');
 
-    // Listener para mudanças em cada slot individual
+    // Listener para mudanças em cada slot individual (Placa)
     container.querySelectorAll('.slot-plate-select').forEach(select => {
       select.addEventListener('change', (e) => {
         const slotIdx = parseInt(e.target.getAttribute('data-slot'), 10);
@@ -1556,6 +1596,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (slotIdx === 0) {
           studioState.selectedPlateId = e.target.value;
         }
+        renderStudioSheet();
+      });
+    });
+
+    // Listener para mudanças de cor por slot
+    container.querySelectorAll('.slot-color-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const targetBtn = e.currentTarget;
+        const slotIdx = parseInt(targetBtn.getAttribute('data-slot'), 10);
+        const theme = targetBtn.getAttribute('data-theme');
+
+        studioState.slotThemes[slotIdx] = theme;
+
+        // Atualiza botões visuais do mesmo slot
+        const parent = targetBtn.closest('.slot-color-options');
+        if (parent) {
+          parent.querySelectorAll('.slot-color-btn').forEach(b => b.classList.remove('active'));
+          targetBtn.classList.add('active');
+        }
+
         renderStudioSheet();
       });
     });
@@ -1572,10 +1632,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (targetPlateId) {
       studioState.selectedPlateId = targetPlateId;
       studioState.slotPlateIds = [targetPlateId];
+      studioState.slotThemes = [studioState.theme || 'white'];
       // Preenche os outros slots com as demais placas existentes
       const others = state.plates.filter(p => String(p.id) !== String(targetPlateId));
       for (let i = 1; i < studioState.layout; i++) {
         studioState.slotPlateIds[i] = others[i - 1]?.id || targetPlateId;
+        studioState.slotThemes[i] = studioState.theme || 'white';
       }
       studioState.mode = 'existing';
     } else {
@@ -1584,8 +1646,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (!Array.isArray(studioState.slotPlateIds) || studioState.slotPlateIds.length === 0) {
         studioState.slotPlateIds = [];
+        studioState.slotThemes = [];
         for (let i = 0; i < studioState.layout; i++) {
           studioState.slotPlateIds[i] = state.plates[i]?.id || state.plates[0]?.id;
+          studioState.slotThemes[i] = studioState.theme || 'white';
         }
       }
     }
@@ -1653,7 +1717,9 @@ document.addEventListener('DOMContentLoaded', () => {
       showCropMarks = arguments[3] !== undefined ? arguments[3] : showCropMarks;
     }
 
-    const isDark = theme === 'black';
+    const currentTheme = theme || 'white';
+    const isDark = currentTheme !== 'white';
+    const themeClass = `theme-${currentTheme}`;
     const host = window.location.host;
     const protocol = window.location.protocol;
     const redirectUrl = `${protocol}//${host}/r/${plateSlug}?src=qr`;
@@ -1667,7 +1733,21 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     ` : '';
 
-    const qrEndpoint = `/api/qrcode/${plateSlug}?src=qr&format=svg&bg=${isDark ? '18181b' : 'ffffff'}&color=${isDark ? 'ffffff' : '000000'}&margin=1`;
+    let qrBgParam = 'ffffff';
+    let qrColorParam = '000000';
+
+    if (currentTheme === 'black') {
+      qrBgParam = '18181b';
+      qrColorParam = 'ffffff';
+    } else if (currentTheme === 'gold') {
+      qrBgParam = '1c1917';
+      qrColorParam = 'fef3c7';
+    } else if (currentTheme === 'blue') {
+      qrBgParam = '0b132b';
+      qrColorParam = '38bdf8';
+    }
+
+    const qrEndpoint = `/api/qrcode/${plateSlug}?src=qr&format=svg&bg=${qrBgParam}&color=${qrColorParam}&margin=1`;
 
     const isInstagram = plateType === 'instagram';
     const isWhatsapp = plateType === 'whatsapp';
@@ -1756,7 +1836,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return `
       <div class="print-plate-wrapper">
         ${cropMarksHtml}
-        <div class="print-plate-card ${isDark ? 'theme-black' : 'theme-white'}">
+        <div class="print-plate-card ${themeClass}">
           <!-- Faixa Colorida Superior -->
           <div class="plate-rainbow-bar"></div>
 
@@ -1856,12 +1936,13 @@ document.addEventListener('DOMContentLoaded', () => {
       for (let i = 0; i < count; i++) {
         const currentCode = `PI-${baseNum + i}`;
         const currentSlug = `pi-${baseNum + i}`;
+        const slotTheme = (studioState.slotThemes && studioState.slotThemes[i]) || studioState.theme || 'white';
         cardsHtml += renderPlateCardHtml({
           code: currentCode,
           slug: currentSlug,
           name: `Placa Inteligente ${currentCode}`,
           type: 'google'
-        }, studioState.theme, studioState.showCropMarks);
+        }, slotTheme, studioState.showCropMarks);
       }
     } else {
       // Modo de placas existentes (padrão)
@@ -1875,12 +1956,13 @@ document.addEventListener('DOMContentLoaded', () => {
       for (let i = 0; i < count; i++) {
         const targetId = studioState.slotPlateIds[i] || studioState.selectedPlateId;
         const plate = state.plates.find(p => String(p.id) === String(targetId)) || state.plates[i % (state.plates.length || 1)];
+        const slotTheme = (studioState.slotThemes && studioState.slotThemes[i]) || studioState.theme || 'white';
         if (plate) {
           distinctPlates.push(plate);
           if (!distinctNames.includes(plate.name)) {
             distinctNames.push(plate.name);
           }
-          cardsHtml += renderPlateCardHtml(plate, studioState.theme, studioState.showCropMarks);
+          cardsHtml += renderPlateCardHtml(plate, slotTheme, studioState.showCropMarks);
         }
       }
 
@@ -1906,19 +1988,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // Se QRCode client-side estiver disponível, gera Data URLs locais em altíssima definição (instantâneo e sem CORS para html2pdf)
     if (window.QRCode && window.QRCode.toDataURL) {
       const qrImgs = a4SheetInner.querySelectorAll('.qr-code-rendered-img');
-      const isDark = studioState.theme === 'black';
       qrImgs.forEach(async (img) => {
         const slug = img.getAttribute('data-slug');
         if (!slug) return;
         const redirectUrl = `${window.location.protocol}//${window.location.host}/r/${slug}?src=qr`;
+        const card = img.closest('.print-plate-card');
+
+        let qrBg = '#ffffff';
+        let qrColor = '#000000';
+
+        if (card) {
+          if (card.classList.contains('theme-black')) {
+            qrBg = '#18181b';
+            qrColor = '#ffffff';
+          } else if (card.classList.contains('theme-gold')) {
+            qrBg = '#1c1917';
+            qrColor = '#fef3c7';
+          } else if (card.classList.contains('theme-blue')) {
+            qrBg = '#0b132b';
+            qrColor = '#38bdf8';
+          }
+        }
+
         try {
           const dUrl = await window.QRCode.toDataURL(redirectUrl, {
             margin: 1,
             width: 600,
             errorCorrectionLevel: 'H',
             color: {
-              dark: isDark ? '#ffffff' : '#000000',
-              light: isDark ? '#18181b' : '#ffffff'
+              dark: qrColor,
+              light: qrBg
             }
           });
           img.src = dUrl;
@@ -1964,11 +2063,15 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < studioState.layout; i++) {
           const targetId = studioState.slotPlateIds[i] || studioState.selectedPlateId;
           const p = state.plates.find(pl => String(pl.id) === String(targetId));
-          if (p && !distinctSlugs.includes(p.slug)) {
-            distinctSlugs.push(p.slug);
+          const t = (studioState.slotThemes && studioState.slotThemes[i]) || studioState.theme;
+          if (p) {
+            const desc = `${p.slug}-${t}`;
+            if (!distinctSlugs.includes(desc)) {
+              distinctSlugs.push(desc);
+            }
           }
         }
-        fileSuffix = distinctSlugs.length > 0 ? `${distinctSlugs.join('-')}-${studioState.theme}` : studioState.theme;
+        fileSuffix = distinctSlugs.length > 0 ? distinctSlugs.join('_') : studioState.theme;
       }
 
       // Prepara opções do html2pdf para escala exata A4 sem distorção

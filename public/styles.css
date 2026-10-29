@@ -2359,6 +2359,90 @@ select option {
   font-weight: 800;
 }
 
+.studio-slot-color-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.studio-slot-color-caption {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.slot-color-options {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.slot-color-btn {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #CBD5E1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.slot-color-btn:hover {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+}
+
+.slot-color-btn.active {
+  background: rgba(6, 182, 212, 0.22);
+  border-color: #38BDF8;
+  color: #FFFFFF;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+}
+
+.slot-color-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.slot-color-dot.dot-white {
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+}
+
+.slot-color-dot.dot-black {
+  background: #111827;
+  border: 1px solid #475569;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+.slot-color-dot.dot-gold {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  border: 1px solid #FCD34D;
+  box-shadow: 0 0 4px rgba(245, 158, 11, 0.6);
+}
+
+.slot-color-dot.dot-blue {
+  background: linear-gradient(135deg, #0284C7, #0369A1);
+  border: 1px solid #38BDF8;
+  box-shadow: 0 0 4px rgba(2, 132, 199, 0.6);
+}
+
 
 .theme-selection-grid {
   display: grid;
@@ -2670,6 +2754,18 @@ select option {
   color: #FFFFFF;
 }
 
+.print-plate-card.theme-gold {
+  background: linear-gradient(160deg, #1C1917 0%, #292524 50%, #141210 100%);
+  color: #FEF3C7;
+  border: 1px solid rgba(217, 119, 6, 0.4);
+}
+
+.print-plate-card.theme-blue {
+  background: linear-gradient(160deg, #0A1120 0%, #0F172A 50%, #060B14 100%);
+  color: #F0F9FF;
+  border: 1px solid rgba(14, 165, 233, 0.35);
+}
+
 /* Marcas de corte para guilhotina (Crop marks) */
 .crop-marks-container {
   position: absolute;
@@ -2823,6 +2919,14 @@ select option {
   background: #18181B;
 }
 
+.theme-gold .plate-frame-inner {
+  background: #1C1917;
+}
+
+.theme-blue .plate-frame-inner {
+  background: #0B132B;
+}
+
 .qr-code-rendered-img {
   width: 32mm;
   height: 32mm;
@@ -2860,6 +2964,18 @@ select option {
   stroke: #FFFFFF;
 }
 
+.theme-gold .nfc-phone-illustration path,
+.theme-gold .nfc-phone-illustration text {
+  fill: #FDE68A;
+  stroke: #FDE68A;
+}
+
+.theme-blue .nfc-phone-illustration path,
+.theme-blue .nfc-phone-illustration text {
+  fill: #38BDF8;
+  stroke: #38BDF8;
+}
+
 .plate-pill-instruction {
   border-radius: 10mm;
   padding: 1.1mm 2.8mm;
@@ -2879,6 +2995,16 @@ select option {
 .theme-black .plate-pill-instruction {
   background: #FFFFFF;
   color: #111827;
+}
+
+.theme-gold .plate-pill-instruction {
+  background: linear-gradient(90deg, #D97706, #B45309);
+  color: #FFFFFF;
+}
+
+.theme-blue .plate-pill-instruction {
+  background: linear-gradient(90deg, #0284C7, #0369A1);
+  color: #FFFFFF;
 }
 
 /* Rodapé: Assinatura e Código PI-121 */
@@ -2904,6 +3030,14 @@ select option {
 
 .theme-black .plate-code-corner {
   color: #FFFFFF;
+}
+
+.theme-gold .plate-code-corner {
+  color: #FDE68A;
+}
+
+.theme-blue .plate-code-corner {
+  color: #38BDF8;
 }
 
 .plate-thanks-center {
